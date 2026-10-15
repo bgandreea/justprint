@@ -1,0 +1,4 @@
+pywin32==312
+Pillow==12.3.0
+pypdfium2==5.14.0
+pywebview==6.2.1

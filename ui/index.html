@@ -1,0 +1,546 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>SpoolMate</title>
+  <link rel="stylesheet" href="/app.css?v=desk39">
+</head>
+<body>
+  <header class="app-banner">
+    <div class="banner-drag">
+      <span class="brand">
+        <img class="brand-mark" src="/logo.png" alt="" draggable="false">
+        <strong>SpoolMate</strong>
+      </span>
+    </div>
+    <div class="window-controls">
+      <button type="button" id="win-min" aria-label="Minimize">&#xE921;</button>
+      <button type="button" id="win-max" aria-label="Maximize"><span class="when-max">&#xE922;</span><span class="when-restore">&#xE923;</span></button>
+      <button type="button" id="win-close" aria-label="Close">&#xE8BB;</button>
+    </div>
+  </header>
+  <aside class="sidebar">
+    <button type="button" id="open-settings" class="settings-btn">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 15.2a3.2 3.2 0 1 0 0-6.4 3.2 3.2 0 0 0 0 6.4z" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M19.4 13.1a7.7 7.7 0 0 0 .1-2.2l2-1.5-2-3.4-2.4 1a7.6 7.6 0 0 0-1.9-1.1l-.4-2.5h-4l-.4 2.5a7.6 7.6 0 0 0-1.9 1.1l-2.4-1-2 3.4 2 1.5a7.7 7.7 0 0 0 .1 2.2l-2 1.5 2 3.4 2.4-1a7.6 7.6 0 0 0 1.9 1.1l.4 2.5h4l.4-2.5a7.6 7.6 0 0 0 1.9-1.1l2.4 1 2-3.4z" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/></svg>
+      Settings
+    </button>
+    <div class="add-row">
+      <button type="button" id="add-files" class="add-btn">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 3.5h7l5 5V20a1.5 1.5 0 0 1-1.5 1.5h-10.5A1.5 1.5 0 0 1 5.5 20V5A1.5 1.5 0 0 1 7 3.5z" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M14 3.8V9h5" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M12 12.2v6M9 15.2h6" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+        <span>Add files</span>
+      </button>
+      <button type="button" id="add-folder" class="add-btn">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3.8 7.2a1.6 1.6 0 0 1 1.6-1.6h4l1.7 1.8h7.5a1.6 1.6 0 0 1 1.6 1.6v8.6a1.6 1.6 0 0 1-1.6 1.6H5.4a1.6 1.6 0 0 1-1.6-1.6z" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M12 11.2v5.2M9.4 13.8h5.2" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+        <span>Add folder</span>
+      </button>
+    </div>
+
+    <section class="printer-card">
+      <div class="kicker">Printer</div>
+      <select id="printer" aria-label="Printer"></select>
+      <div class="status-row">
+        <span class="status-label"><i id="printer-dot" class="dot ok"></i><span id="printer-status-label">Checking…</span></span>
+        <button type="button" id="test-page" class="link">Test page</button>
+      </div>
+    </section>
+
+    <button type="button" id="print-btn" class="print-btn" disabled>
+      <span class="when-print">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 8V4.8h10V8" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><path d="M6 16.5H4.8A1.8 1.8 0 0 1 3 14.7V9.8A2.3 2.3 0 0 1 5.3 7.5h13.4A2.3 2.3 0 0 1 21 9.8v4.9a1.8 1.8 0 0 1-1.8 1.8H17" fill="none" stroke="currentColor" stroke-width="1.7"/><rect x="7" y="13.2" width="10" height="6.2" rx="1" fill="none" stroke="currentColor" stroke-width="1.7"/></svg>
+        Print
+      </span>
+      <span class="when-stop">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="6" y="6" width="12" height="12" rx="1.5" fill="currentColor"/></svg>
+        Stop
+      </span>
+    </button>
+  </aside>
+
+  <main class="main">
+    <header class="list-header">
+      <h1>Print List</h1>
+      <div class="tools">
+        <span id="to-print">To print: 0 of 0</span>
+        <button type="button" id="remove-printed" class="text-btn" hidden>Remove printed</button>
+        <button type="button" id="clear" class="icon-btn" aria-label="Clear list" title="Clear the list. Files stay on disk." disabled>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 11v6"/><path d="M14 11v6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+        </button>
+      </div>
+    </header>
+    <div class="table-scroll">
+      <table>
+        <colgroup>
+          <col class="c-num">
+          <col class="c-check">
+          <col>
+          <col class="c-type">
+          <col class="c-pages">
+          <col class="c-size">
+          <col class="c-modified">
+          <col class="c-copies">
+          <col class="c-range">
+          <col class="c-status">
+          <col class="c-remove">
+        </colgroup>
+        <thead>
+          <tr>
+            <th class="num">#</th>
+            <th class="check"><input type="checkbox" id="select-all" aria-label="Select all"></th>
+            <th>File</th>
+            <th>Type</th>
+            <th>Pages</th>
+            <th>Size</th>
+            <th>Modified</th>
+            <th>Copies</th>
+            <th>Range</th>
+            <th>Status</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody id="rows">
+          <tr class="empty"><td colspan="11">Add files or a folder, or drop them here.<br>PDFs, images, and text files can be printed together.</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </main>
+
+  <aside class="side-preview">
+    <div class="counts">
+      <div class="sheets"><span>Sheets:</span> <strong id="sheets-value">0</strong></div>
+      <p id="pages-files" class="subcounts">Pages: 0 · Files: 0</p>
+    </div>
+
+    <section class="preview">
+      <div class="preview-frame">
+        <img id="preview-image" alt="" hidden>
+        <p id="preview-empty">Select a file to preview it.</p>
+      </div>
+      <div class="pager">
+        <button type="button" id="prev-page" aria-label="Previous page">‹</button>
+        <span id="page-label">page 0 of 0</span>
+        <button type="button" id="next-page" aria-label="Next page">›</button>
+      </div>
+      <div id="preview-name" class="preview-name"></div>
+      <div class="bar" id="bar" hidden><div id="bar-fill"></div></div>
+      <div class="job-meta">
+        <div id="job-file"></div>
+        <div id="job-current" hidden></div>
+        <div id="job-message">Add files or a folder, or drop them on this window.</div>
+        <div id="job-sheets"></div>
+      </div>
+    </section>
+  </aside>
+
+  <div id="settings" class="modal" hidden>
+    <div class="dialog settings-dialog" role="dialog" aria-modal="true" aria-labelledby="settings-title">
+      <header class="dialog-header">
+        <h2 id="settings-title">Settings</h2>
+        <button type="button" id="close-settings" class="icon-btn" aria-label="Close settings">×</button>
+      </header>
+      <div class="settings-shell">
+        <nav class="settings-nav" aria-label="Settings categories">
+          <button type="button" class="settings-tab active" data-tab="print">Print</button>
+          <button type="button" class="settings-tab" data-tab="paper">Paper</button>
+          <button type="button" class="settings-tab" data-tab="layout">Layout</button>
+          <button type="button" class="settings-tab" data-tab="sheets">Sheets</button>
+          <button type="button" class="settings-tab" data-tab="marks">Marks</button>
+          <button type="button" class="settings-tab" data-tab="files">Files</button>
+        </nav>
+        <div class="settings-panels">
+          <section class="settings-panel" data-panel="print">
+            <div class="field">
+              <div class="field-head"><label for="set-copies">Copies</label><button type="button" class="info" aria-label="Used when a file’s Copies column says default. A number in that column overrides this."><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="1.7"/><path d="M12 11.2v5" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/><path d="M12 8h.01" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg></button></div>
+              <input id="set-copies" type="number" min="1" max="99" step="1">
+            </div>
+            <div class="check-row">
+              <label class="check-field"><input id="set-collate" type="checkbox"><span>Collate by sets</span></label>
+              <button type="button" class="info" aria-label="Each copy prints as a full set: pages 1, 2, 3, then 1, 2, 3 again. Off prints every copy of page 1 before page 2. Double-sided jobs are always collated."><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="1.7"/><path d="M12 11.2v5" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/><path d="M12 8h.01" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg></button>
+            </div>
+            <div class="field">
+              <div class="field-head"><label for="set-batch-repeat">Repeat the list</label><button type="button" class="info" aria-label="Prints the whole list from start to finish this many times. Copies repeats each file on its own."><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="1.7"/><path d="M12 11.2v5" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/><path d="M12 8h.01" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg></button></div>
+              <input id="set-batch-repeat" type="number" min="1" max="99" step="1">
+            </div>
+            <div class="field">
+              <div class="field-head"><label for="set-page-range">Page range</label><button type="button" class="info" aria-label="Limits every file to these pages, such as 1-5, 8, 11-13. It overrides the Range column. Leave it empty to use each file’s own range."><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="1.7"/><path d="M12 11.2v5" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/><path d="M12 8h.01" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg></button></div>
+              <input id="set-page-range" type="text" placeholder="all, or 1-5, 8, 11-13" spellcheck="false" autocomplete="off">
+            </div>
+            <div class="field">
+              <div class="field-head"><label for="set-orientation">Orientation</label><button type="button" class="info" aria-label="Auto follows the page. Portrait is taller than wide. Landscape is wider than tall."><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="1.7"/><path d="M12 11.2v5" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/><path d="M12 8h.01" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg></button></div>
+              <select id="set-orientation">
+                <option value="auto">Auto</option>
+                <option value="portrait">Portrait</option>
+                <option value="landscape">Landscape</option>
+              </select>
+            </div>
+            <div class="duplex" id="duplex-picker">
+              <select id="set-duplex" class="sr-only" tabindex="-1" aria-hidden="true">
+                <option value="simplex">Print on one side</option>
+                <option value="long">Print on both sides, long edge</option>
+                <option value="short">Print on both sides, short edge</option>
+              </select>
+              <div class="duplex-shell">
+                <button type="button" class="duplex-button" id="duplex-button" aria-haspopup="listbox" aria-expanded="false" aria-controls="duplex-menu" aria-label="Print on one side. Only print on one side of the page"></button>
+                <span class="duplex-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="6" y="3.5" width="12" height="17" rx="1.2" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M9 8h6M9 11.2h6M9 14.4h4" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg></span>
+                <span class="duplex-copy">
+                  <span class="duplex-title-row">
+                    <strong id="duplex-title">Print on one side</strong>
+                    <button type="button" class="info" aria-label="Print on one side, or on both. Long edge flips like a book. Short edge flips like a notepad."><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="1.7"/><path d="M12 11.2v5" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/><path d="M12 8h.01" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg></button>
+                  </span>
+                  <span id="duplex-hint">Only print on one side of the page</span>
+                </span>
+                <svg class="duplex-chevron" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 10l5 5 5-5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              </div>
+              <div class="duplex-menu" id="duplex-menu" role="listbox" aria-label="Sides" hidden>
+                <button type="button" class="duplex-option" role="option" data-value="simplex" data-title="Print on one side" data-hint="Only print on one side of the page">
+                  <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="6" y="3.5" width="12" height="17" rx="1.2" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M9 8h6M9 11.2h6M9 14.4h4" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
+                  <span><strong>Print on one side</strong><span>Only print on one side of the page</span></span>
+                </button>
+                <button type="button" class="duplex-option" role="option" data-value="long" data-title="Print on both sides" data-hint="Flip pages on the long edge">
+                  <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="3.5" width="16" height="17" rx="1.2" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M12 4.2v15.6" fill="none" stroke="currentColor" stroke-width="1.4" stroke-dasharray="1.6 1.8" stroke-linecap="round"/><path d="M6.4 8h3.2M6.4 11h3.2M14.4 8h3.2M14.4 11h3.2" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
+                  <span><strong>Print on both sides</strong><span>Flip pages on the long edge</span></span>
+                </button>
+                <button type="button" class="duplex-option" role="option" data-value="short" data-title="Print on both sides" data-hint="Flip pages on the short edge">
+                  <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="3.5" width="16" height="17" rx="1.2" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M4.6 12h14.8" fill="none" stroke="currentColor" stroke-width="1.4" stroke-dasharray="1.6 1.8" stroke-linecap="round"/><path d="M7.5 6.6h9M7.5 9h6M7.5 15h9M7.5 17.4h6" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
+                  <span><strong>Print on both sides</strong><span>Flip pages on the short edge</span></span>
+                </button>
+              </div>
+            </div>
+            <div class="check-row">
+              <label class="check-field"><input id="set-document-front" type="checkbox"><span>Start every document on the front of a sheet</span></label>
+              <button type="button" class="info" aria-label="On a double-sided job sent as one printer job, an odd-length file can put the next file on its back. This adds a blank back so the next file starts on a front. It applies only when both sides and one printer job are on."><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="1.7"/><path d="M12 11.2v5" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/><path d="M12 8h.01" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg></button>
+            </div>
+            <div class="field">
+              <div class="field-head"><label for="set-color">Color</label><button type="button" class="info" aria-label="Color, or black and white. This is sent to the printer with the job."><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="1.7"/><path d="M12 11.2v5" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/><path d="M12 8h.01" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg></button></div>
+              <select id="set-color">
+                <option value="color">Color</option>
+                <option value="grayscale">Black and white</option>
+              </select>
+            </div>
+            <div class="check-row">
+              <label class="check-field"><input id="set-single-job" type="checkbox"><span>Send as one printer job</span></label>
+              <button type="button" class="info" aria-label="Sends every file as one printer job. Cover pages and separator pages are skipped. Starting each file on a front works only in this mode."><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="1.7"/><path d="M12 11.2v5" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/><path d="M12 8h.01" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg></button>
+            </div>
+            <h3 class="settings-subtitle">Timing</h3>
+            <div class="field">
+              <div class="field-head"><label for="set-pause">Pause before each file (seconds)</label><button type="button" class="info" aria-label="Waits this many seconds before the next file starts."><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="1.7"/><path d="M12 11.2v5" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/><path d="M12 8h.01" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg></button></div>
+              <input id="set-pause" type="number" min="0" max="600" step="1">
+            </div>
+            <div class="field">
+              <div class="field-head"><label for="set-ppm">Sheets per minute</label><button type="button" class="info" aria-label="After the printer queue clears, waits as if the printer finishes this many sheets per minute. 0 waits only until the queue is empty."><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="1.7"/><path d="M12 11.2v5" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/><path d="M12 8h.01" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg></button></div>
+              <input id="set-ppm" type="number" min="0" max="300" step="1">
+            </div>
+            <div class="check-row">
+              <label class="check-field"><input id="set-wait-queue" type="checkbox"><span>Wait for the printer queue to clear</span></label>
+              <button type="button" class="info" aria-label="Waits until Windows says the job has left the queue before counting the sheet as finished and moving on."><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="1.7"/><path d="M12 11.2v5" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/><path d="M12 8h.01" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg></button>
+            </div>
+          </section>
+
+          <section class="settings-panel" data-panel="paper" hidden>
+            <div class="field">
+              <div class="field-head"><label for="set-paper">Paper size</label><button type="button" class="info" aria-label="The sheet size sent to the printer and used to lay out the preview. Printer default leaves the size to the printer. A0, A1, A7, and the photo sizes are sent as an exact custom size."><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="1.7"/><path d="M12 11.2v5" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/><path d="M12 8h.01" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg></button></div>
+              <select id="set-paper">
+                <option value="default">Printer default</option>
+                <optgroup label="ISO">
+                  <option value="a0">A0 (841 × 1189 mm)</option>
+                  <option value="a1">A1 (594 × 841 mm)</option>
+                  <option value="a2">A2 (420 × 594 mm)</option>
+                  <option value="a3">A3 (297 × 420 mm)</option>
+                  <option value="a4">A4 (210 × 297 mm)</option>
+                  <option value="a5">A5 (148 × 210 mm)</option>
+                  <option value="a6">A6 (105 × 148 mm)</option>
+                  <option value="a7">A7 (74 × 105 mm)</option>
+                </optgroup>
+                <optgroup label="North America">
+                  <option value="letter">Letter (8.5 × 11 in)</option>
+                  <option value="legal">Legal (8.5 × 14 in)</option>
+                  <option value="tabloid">Tabloid (11 × 17 in)</option>
+                </optgroup>
+                <optgroup label="Photo">
+                  <option value="photo4x6">4 × 6 in</option>
+                  <option value="photo5x7">5 × 7 in</option>
+                  <option value="photo8x10">8 × 10 in</option>
+                  <option value="photo11x14">11 × 14 in</option>
+                  <option value="photo16x20">16 × 20 in</option>
+                  <option value="photo20x30">20 × 30 in</option>
+                  <option value="photo24x36">24 × 36 in</option>
+                </optgroup>
+              </select>
+            </div>
+            <div class="field-row">
+              <div class="field">
+                <div class="field-head"><label for="set-custom-width">Custom width (mm)</label><button type="button" class="info" aria-label="With custom height, both at least 20 mm, this size replaces Paper size. Use it for labels and forms that are not in the list. Set either side to 0 to use Paper size again."><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="1.7"/><path d="M12 11.2v5" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/><path d="M12 8h.01" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg></button></div>
+                <input id="set-custom-width" type="number" min="0" max="2000" step="1">
+              </div>
+              <div class="field">
+                <div class="field-head"><label for="set-custom-height">Custom height (mm)</label><button type="button" class="info" aria-label="With custom width, both at least 20 mm, this size replaces Paper size. Set either side to 0 to use Paper size again."><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="1.7"/><path d="M12 11.2v5" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/><path d="M12 8h.01" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg></button></div>
+                <input id="set-custom-height" type="number" min="0" max="2000" step="1">
+              </div>
+            </div>
+            <div class="field">
+              <div class="field-head"><label for="set-paper-tray">Paper tray</label><button type="button" class="info" aria-label="Which tray the printer should pull from. Printer default leaves the tray alone."><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="1.7"/><path d="M12 11.2v5" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/><path d="M12 8h.01" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg></button></div>
+              <select id="set-paper-tray">
+                <option value="default">Printer default</option>
+                <option value="auto">Auto</option>
+                <option value="upper">Upper</option>
+                <option value="lower">Lower</option>
+                <option value="manual">Manual</option>
+                <option value="cassette">Cassette</option>
+              </select>
+            </div>
+            <div class="check-row">
+              <label class="check-field"><input id="set-adopt-defaults" type="checkbox"><span>Use printer defaults when changing printer</span></label>
+              <button type="button" class="info" aria-label="When you pick another printer, copies its color, sides, orientation, and copy count into these settings. Paper size and tray stay on Printer default."><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="1.7"/><path d="M12 11.2v5" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/><path d="M12 8h.01" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg></button>
+            </div>
+            <div class="action-row">
+              <button type="button" id="load-printer-defaults" class="secondary-btn">Load from current printer</button>
+              <button type="button" class="info" aria-label="Reads the selected printer now and copies its paper size, color, sides, orientation, and copy count into these settings."><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="1.7"/><path d="M12 11.2v5" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/><path d="M12 8h.01" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg></button>
+            </div>
+          </section>
+
+          <section class="settings-panel" data-panel="layout" hidden>
+            <div class="field">
+              <div class="field-head"><label for="set-scale">Scale</label><button type="button" class="info" aria-label="Fit keeps the whole page inside the margins. Fill covers the sheet and may crop the edges. Actual size uses the file’s own size. Percent uses Scale percent."><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="1.7"/><path d="M12 11.2v5" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/><path d="M12 8h.01" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg></button></div>
+              <select id="set-scale">
+                <option value="fit">Fit</option>
+                <option value="fill">Fill</option>
+                <option value="actual">Actual size</option>
+                <option value="percent">Percent</option>
+              </select>
+            </div>
+            <div class="field">
+              <div class="field-head"><label for="set-scale-percent">Scale percent</label><button type="button" class="info" aria-label="How large the page is when Scale is Percent. 100 matches a fitted page. Used only when Scale is Percent."><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="1.7"/><path d="M12 11.2v5" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/><path d="M12 8h.01" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg></button></div>
+              <input id="set-scale-percent" type="number" min="1" max="400" step="1">
+            </div>
+            <div class="field-row">
+              <div class="field"><div class="field-head"><label for="set-margin-left">Margin left (mm)</label><button type="button" class="info" aria-label="Empty space on the left edge, in millimeters. The page is placed inside the remaining area."><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="1.7"/><path d="M12 11.2v5" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/><path d="M12 8h.01" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg></button></div><input id="set-margin-left" type="number" step="1"></div>
+              <div class="field"><div class="field-head"><label for="set-margin-right">Margin right (mm)</label><button type="button" class="info" aria-label="Empty space on the right edge, in millimeters. The page is placed inside the remaining area."><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="1.7"/><path d="M12 11.2v5" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/><path d="M12 8h.01" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg></button></div><input id="set-margin-right" type="number" step="1"></div>
+            </div>
+            <div class="field-row">
+              <div class="field"><div class="field-head"><label for="set-margin-top">Margin top (mm)</label><button type="button" class="info" aria-label="Empty space on the top edge, in millimeters. The page is placed inside the remaining area."><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="1.7"/><path d="M12 11.2v5" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/><path d="M12 8h.01" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg></button></div><input id="set-margin-top" type="number" step="1"></div>
+              <div class="field"><div class="field-head"><label for="set-margin-bottom">Margin bottom (mm)</label><button type="button" class="info" aria-label="Empty space on the bottom edge, in millimeters. The page is placed inside the remaining area."><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="1.7"/><path d="M12 11.2v5" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/><path d="M12 8h.01" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg></button></div><input id="set-margin-bottom" type="number" step="1"></div>
+            </div>
+            <div class="field-row">
+              <div class="field">
+                <div class="field-head"><label for="set-align-h">Horizontal align</label><button type="button" class="info" aria-label="Where the page sits across the sheet when it does not fill the width. Left, center, or right."><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="1.7"/><path d="M12 11.2v5" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/><path d="M12 8h.01" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg></button></div>
+                <select id="set-align-h"><option value="left">Left</option><option value="center">Center</option><option value="right">Right</option></select>
+              </div>
+              <div class="field">
+                <div class="field-head"><label for="set-align-v">Vertical align</label><button type="button" class="info" aria-label="Where the page sits down the sheet when it does not fill the height. Top, middle, or bottom."><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="1.7"/><path d="M12 11.2v5" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/><path d="M12 8h.01" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg></button></div>
+                <select id="set-align-v"><option value="top">Top</option><option value="middle">Middle</option><option value="bottom">Bottom</option></select>
+              </div>
+            </div>
+            <div class="field-row">
+              <div class="field"><div class="field-head"><label for="set-offset-x">Offset X (mm)</label><button type="button" class="info" aria-label="Nudges the page to the right, in millimeters. A negative number nudges it left."><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="1.7"/><path d="M12 11.2v5" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/><path d="M12 8h.01" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg></button></div><input id="set-offset-x" type="number" step="1"></div>
+              <div class="field"><div class="field-head"><label for="set-offset-y">Offset Y (mm)</label><button type="button" class="info" aria-label="Nudges the page down, in millimeters. A negative number nudges it up."><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="1.7"/><path d="M12 11.2v5" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/><path d="M12 8h.01" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg></button></div><input id="set-offset-y" type="number" step="1"></div>
+            </div>
+            <div class="field">
+              <div class="field-head"><label for="set-rotate">Rotate</label><button type="button" class="info" aria-label="Turns each page by this many degrees before it is placed on the sheet."><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="1.7"/><path d="M12 11.2v5" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/><path d="M12 8h.01" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg></button></div>
+              <select id="set-rotate"><option value="0">0°</option><option value="90">90°</option><option value="180">180°</option><option value="270">270°</option></select>
+            </div>
+            <div class="field">
+              <div class="field-head"><label for="set-parity">Parity</label><button type="button" class="info" aria-label="All pages, or only odd or even page numbers."><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="1.7"/><path d="M12 11.2v5" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/><path d="M12 8h.01" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg></button></div>
+              <select id="set-parity"><option value="all">All pages</option><option value="odd">Odd pages</option><option value="even">Even pages</option></select>
+            </div>
+            <div class="check-row">
+              <label class="check-field"><input id="set-reverse" type="checkbox"><span>Reverse page order</span></label>
+              <button type="button" class="info" aria-label="Prints the last page of each file first."><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="1.7"/><path d="M12 11.2v5" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/><path d="M12 8h.01" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg></button>
+            </div>
+            <div class="check-row">
+              <label class="check-field"><input id="set-skip-blank" type="checkbox"><span>Skip blank pages</span></label>
+              <button type="button" class="info" aria-label="Leaves out pages that are nearly white."><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="1.7"/><path d="M12 11.2v5" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/><path d="M12 8h.01" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg></button>
+            </div>
+            <div class="field">
+              <div class="field-head"><label for="set-image-dpi">Resolution (DPI)</label><button type="button" class="info" aria-label="How finely each page is drawn. Higher is sharper and uses more memory. Very large sheets are capped so the page still prints. 300 is the usual setting."><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="1.7"/><path d="M12 11.2v5" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/><path d="M12 8h.01" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg></button></div>
+              <input id="set-image-dpi" type="number" min="72" max="1200" step="1">
+            </div>
+          </section>
+
+          <section class="settings-panel" data-panel="sheets" hidden>
+            <div class="field">
+              <div class="field-head"><label for="set-nup">Pages per sheet</label><button type="button" class="info" aria-label="How many pages share one sheet. 1 is a normal page. 2, 4, 6, 9, or 16 shrinks pages onto one sheet."><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="1.7"/><path d="M12 11.2v5" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/><path d="M12 8h.01" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg></button></div>
+              <select id="set-nup"><option value="1">1</option><option value="2">2</option><option value="4">4</option><option value="6">6</option><option value="9">9</option><option value="16">16</option></select>
+            </div>
+            <div class="check-row">
+              <label class="check-field"><input id="set-nup-border" type="checkbox"><span>Draw borders around pages</span></label>
+              <button type="button" class="info" aria-label="Draws a line around each page when several pages share a sheet."><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="1.7"/><path d="M12 11.2v5" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/><path d="M12 8h.01" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg></button>
+            </div>
+            <div class="field">
+              <div class="field-head"><label for="set-nup-order">Page order on the sheet</label><button type="button" class="info" aria-label="How pages fill a multi-page sheet: across each row, or down each column."><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="1.7"/><path d="M12 11.2v5" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/><path d="M12 8h.01" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg></button></div>
+              <select id="set-nup-order">
+                <option value="rowsright">Rows, left to right</option>
+                <option value="rowsleft">Rows, right to left</option>
+                <option value="colsdown">Columns, top to bottom</option>
+                <option value="colsup">Columns, bottom to top</option>
+              </select>
+            </div>
+            <div class="check-row">
+              <label class="check-field"><input id="set-booklet" type="checkbox"><span>Booklet</span></label>
+              <button type="button" class="info" aria-label="Reorders pages into a booklet and prints two pages on each side of the sheet. The page count is padded to a multiple of 4."><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="1.7"/><path d="M12 11.2v5" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/><path d="M12 8h.01" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg></button>
+            </div>
+            <div class="field">
+              <div class="field-head"><label for="set-booklet-binding">Booklet binding</label><button type="button" class="info" aria-label="Left reads like a usual book. Right is for books bound on the right."><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="1.7"/><path d="M12 11.2v5" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/><path d="M12 8h.01" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg></button></div>
+              <select id="set-booklet-binding"><option value="left">Left</option><option value="right">Right</option></select>
+            </div>
+            <div class="check-row">
+              <label class="check-field"><input id="set-crop-marks" type="checkbox"><span>Crop marks</span></label>
+              <button type="button" class="info" aria-label="Prints small marks at the corners of a multi-page sheet, for cutting the pages apart."><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="1.7"/><path d="M12 11.2v5" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/><path d="M12 8h.01" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg></button>
+            </div>
+            <div class="check-row">
+              <label class="check-field"><input id="set-cover-page" type="checkbox"><span>Cover page before each document</span></label>
+              <button type="button" class="info" aria-label="Prints a labeled sheet with the file name before each document. Skipped when everything is sent as one printer job."><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="1.7"/><path d="M12 11.2v5" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/><path d="M12 8h.01" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg></button>
+            </div>
+            <div class="check-row">
+              <label class="check-field"><input id="set-separator-pages" type="checkbox"><span>Separator page after each document</span></label>
+              <button type="button" class="info" aria-label="Prints a labeled sheet after each document. Skipped when everything is sent as one printer job."><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="1.7"/><path d="M12 11.2v5" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/><path d="M12 8h.01" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg></button>
+            </div>
+            <div class="check-row">
+              <label class="check-field"><input id="set-placeholder" type="checkbox"><span>Placeholder for missing pages</span></label>
+              <button type="button" class="info" aria-label="If a file or a page cannot be drawn, a labeled sheet is printed in its place and the rest of the list continues."><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="1.7"/><path d="M12 11.2v5" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/><path d="M12 8h.01" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg></button>
+            </div>
+            <div class="check-row">
+              <label class="check-field"><input id="set-folder-cover" type="checkbox"><span>Folder cover page</span></label>
+              <button type="button" class="info" aria-label="When the folder changes, prints a sheet with that folder’s name before its files."><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="1.7"/><path d="M12 11.2v5" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/><path d="M12 8h.01" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg></button>
+            </div>
+            <div class="check-row">
+              <label class="check-field"><input id="set-end-cover" type="checkbox"><span>End cover page</span></label>
+              <button type="button" class="info" aria-label="Prints one sheet after the list that marks the end of the job."><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="1.7"/><path d="M12 11.2v5" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/><path d="M12 8h.01" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg></button>
+            </div>
+          </section>
+
+          <section class="settings-panel" data-panel="marks" hidden>
+            <h3 class="settings-subtitle">Header and footer</h3>
+            <div class="field-row">
+              <div class="field"><div class="field-head"><label for="set-stamp-hl">Header left</label><button type="button" class="info" aria-label="Text in the top-left margin of every page. {page} is this page, {pages} is the page count, {name} is the file name, and {date} is today’s date."><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="1.7"/><path d="M12 11.2v5" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/><path d="M12 8h.01" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg></button></div><input id="set-stamp-hl" type="text"></div>
+              <div class="field"><div class="field-head"><label for="set-stamp-hc">Header center</label><button type="button" class="info" aria-label="Text in the top-center margin of every page. {page} is this page, {pages} is the page count, {name} is the file name, and {date} is today’s date."><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="1.7"/><path d="M12 11.2v5" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/><path d="M12 8h.01" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg></button></div><input id="set-stamp-hc" type="text"></div>
+            </div>
+            <div class="field"><div class="field-head"><label for="set-stamp-hr">Header right</label><button type="button" class="info" aria-label="Text in the top-right margin of every page. {page} is this page, {pages} is the page count, {name} is the file name, and {date} is today’s date."><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="1.7"/><path d="M12 11.2v5" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/><path d="M12 8h.01" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg></button></div><input id="set-stamp-hr" type="text"></div>
+            <div class="field-row">
+              <div class="field"><div class="field-head"><label for="set-stamp-fl">Footer left</label><button type="button" class="info" aria-label="Text in the bottom-left margin of every page. {page} is this page, {pages} is the page count, {name} is the file name, and {date} is today’s date."><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="1.7"/><path d="M12 11.2v5" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/><path d="M12 8h.01" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg></button></div><input id="set-stamp-fl" type="text"></div>
+              <div class="field"><div class="field-head"><label for="set-stamp-fc">Footer center</label><button type="button" class="info" aria-label="Text in the bottom-center margin of every page. A footer of {page} / {pages} prints as 2 / 5."><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="1.7"/><path d="M12 11.2v5" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/><path d="M12 8h.01" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg></button></div><input id="set-stamp-fc" type="text"></div>
+            </div>
+            <div class="field"><div class="field-head"><label for="set-stamp-fr">Footer right</label><button type="button" class="info" aria-label="Text in the bottom-right margin of every page. {page} is this page, {pages} is the page count, {name} is the file name, and {date} is today’s date."><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="1.7"/><path d="M12 11.2v5" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/><path d="M12 8h.01" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg></button></div><input id="set-stamp-fr" type="text"></div>
+            <div class="field">
+              <div class="field-head"><label for="set-stamp-size">Text size</label><button type="button" class="info" aria-label="Size of the header and footer text. The smallest size actually drawn is 8."><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="1.7"/><path d="M12 11.2v5" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/><path d="M12 8h.01" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg></button></div>
+              <input id="set-stamp-size" type="number" min="4" max="72" step="1">
+            </div>
+            <h3 class="settings-subtitle">Watermark</h3>
+            <div class="field"><div class="field-head"><label for="set-wm-text">Text</label><button type="button" class="info" aria-label="Words drawn across the page. Leave this empty for no text watermark."><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="1.7"/><path d="M12 11.2v5" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/><path d="M12 8h.01" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg></button></div><input id="set-wm-text" type="text"></div>
+            <div class="field-row">
+              <div class="field"><div class="field-head"><label for="set-wm-size">Font size</label><button type="button" class="info" aria-label="Size of the watermark text. 0 picks a size from the page."><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="1.7"/><path d="M12 11.2v5" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/><path d="M12 8h.01" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg></button></div><input id="set-wm-size" type="number" min="0" max="200" step="1"></div>
+              <div class="field"><div class="field-head"><label for="set-wm-angle">Angle</label><button type="button" class="info" aria-label="How far the watermark is rotated, in degrees. 45 is the usual diagonal."><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="1.7"/><path d="M12 11.2v5" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/><path d="M12 8h.01" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg></button></div><input id="set-wm-angle" type="number" min="0" max="359" step="1"></div>
+            </div>
+            <div class="field"><div class="field-head"><label for="set-wm-intensity">Intensity</label><button type="button" class="info" aria-label="How strong the watermark is, from faint at 1 to solid at 100."><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="1.7"/><path d="M12 11.2v5" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/><path d="M12 8h.01" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg></button></div><input id="set-wm-intensity" type="number" min="1" max="100" step="1"></div>
+            <div class="check-row">
+              <label class="check-field"><input id="set-wm-outline" type="checkbox"><span>Outline</span></label>
+              <button type="button" class="info" aria-label="Draws a light outline on the watermark text."><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="1.7"/><path d="M12 11.2v5" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/><path d="M12 8h.01" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg></button>
+            </div>
+            <div class="check-row">
+              <label class="check-field"><input id="set-wm-behind" type="checkbox"><span>Behind content</span></label>
+              <button type="button" class="info" aria-label="Draws the watermark under the page. Off draws it on top of the page."><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="1.7"/><path d="M12 11.2v5" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/><path d="M12 8h.01" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg></button>
+            </div>
+            <div class="field"><div class="field-head"><label for="set-wm-range">Page range</label><button type="button" class="info" aria-label="Which pages get the watermark, such as 1-3. Empty means every page."><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="1.7"/><path d="M12 11.2v5" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/><path d="M12 8h.01" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg></button></div><input id="set-wm-range" type="text" placeholder="all, or 1-3"></div>
+            <div class="field"><div class="field-head"><label for="set-wm-image">Image path</label><button type="button" class="info" aria-label="A picture on this computer to use as the watermark. Leave it empty for text only."><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="1.7"/><path d="M12 11.2v5" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/><path d="M12 8h.01" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg></button></div><input id="set-wm-image" type="text" placeholder="Optional image file"></div>
+            <div class="field"><div class="field-head"><label for="set-wm-image-size">Image size %</label><button type="button" class="info" aria-label="How large the watermark picture is compared with the shorter side of the page."><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="1.7"/><path d="M12 11.2v5" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/><path d="M12 8h.01" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg></button></div><input id="set-wm-image-size" type="number" min="1" max="100" step="1"></div>
+          </section>
+
+          <section class="settings-panel" data-panel="files" hidden>
+            <h3 class="settings-subtitle">Adding files</h3>
+            <div class="check-row">
+              <label class="check-field"><input id="set-subfolders" type="checkbox"><span>Include subfolders</span></label>
+              <button type="button" class="info" aria-label="When you add a folder, also add files from folders inside it."><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="1.7"/><path d="M12 11.2v5" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/><path d="M12 8h.01" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg></button>
+            </div>
+            <fieldset class="types">
+              <legend>File types <button type="button" class="info" aria-label="Which kinds of files are added from a folder. PDFs, images, and text can be printed. Office files are skipped until you convert them to PDF."><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="1.7"/><path d="M12 11.2v5" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/><path d="M12 8h.01" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg></button></legend>
+              <label><input id="set-pdf" type="checkbox"> PDF</label>
+              <label><input id="set-images" type="checkbox"> Images</label>
+              <label><input id="set-text" type="checkbox"> Text</label>
+            </fieldset>
+            <h3 class="settings-subtitle">After the job</h3>
+            <div class="field">
+              <div class="field-head"><label for="set-printed-action">Printed files</label><button type="button" class="info" aria-label="After a finished job, leave the files where they are, move them, or copy them into the folder below."><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="1.7"/><path d="M12 11.2v5" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/><path d="M12 8h.01" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg></button></div>
+              <select id="set-printed-action">
+                <option value="none">Leave where they are</option>
+                <option value="move">Move to a folder</option>
+                <option value="copy">Copy to a folder</option>
+              </select>
+            </div>
+            <div class="folder-row">
+              <div class="field grow">
+                <div class="field-head"><label for="set-printed-folder">Folder</label><button type="button" class="info" aria-label="Where printed files are moved or copied. Removing a file from the print list never deletes it from disk."><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="1.7"/><path d="M12 11.2v5" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/><path d="M12 8h.01" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg></button></div>
+                <input id="set-printed-folder" type="text" readonly placeholder="Choose a folder…">
+              </div>
+              <button type="button" id="pick-printed-folder" class="secondary-btn">Browse…</button>
+            </div>
+            <div class="check-row">
+              <label class="check-field"><input id="set-remove-printed" type="checkbox"><span>Remove printed files from the list</span></label>
+              <button type="button" class="info" aria-label="When the job ends, takes finished files off the print list. They stay on disk."><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="1.7"/><path d="M12 11.2v5" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/><path d="M12 8h.01" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg></button>
+            </div>
+            <div class="check-row">
+              <label class="check-field"><input id="set-show-summary" type="checkbox"><span>Show a summary when the job ends</span></label>
+              <button type="button" class="info" aria-label="Opens a summary of what printed, what failed, and what was stopped."><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="1.7"/><path d="M12 11.2v5" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/><path d="M12 8h.01" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg></button>
+            </div>
+            <div class="check-row">
+              <label class="check-field"><input id="set-print-report" type="checkbox"><span>Include a report in the summary</span></label>
+              <button type="button" class="info" aria-label="Adds the per-file report to the summary dialog."><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="1.7"/><path d="M12 11.2v5" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/><path d="M12 8h.01" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg></button>
+            </div>
+            <div class="check-row">
+              <label class="check-field"><input id="set-report-file" type="checkbox"><span>Save a report file</span></label>
+              <button type="button" class="info" aria-label="Writes a report file in SpoolMate’s reports folder when the job ends."><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="1.7"/><path d="M12 11.2v5" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/><path d="M12 8h.01" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg></button>
+            </div>
+            <div class="field">
+              <div class="field-head"><label for="set-report-format">Report format</label><button type="button" class="info" aria-label="Text or HTML for the saved report file."><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="1.7"/><path d="M12 11.2v5" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/><path d="M12 8h.01" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg></button></div>
+              <select id="set-report-format"><option value="text">Text</option><option value="html">HTML</option></select>
+            </div>
+            <p class="hint footnote">Window size is remembered. Files print in list order.</p>
+          </section>
+        </div>
+      </div>
+      <footer class="settings-footer">
+        <div class="settings-footer-links">
+          <button type="button" id="settings-save" class="text-btn">Save</button>
+          <button type="button" id="settings-load" class="text-btn">Load</button>
+          <button type="button" id="settings-reset" class="text-btn">Reset</button>
+        </div>
+        <button type="button" id="settings-close-footer" class="secondary-btn">Close</button>
+      </footer>
+    </div>
+  </div>
+
+  <div id="summary" class="modal" hidden>
+    <div class="dialog summary-dialog" role="dialog" aria-modal="true" aria-labelledby="summary-title">
+      <header class="dialog-header">
+        <h2 id="summary-title">Print summary</h2>
+        <button type="button" id="close-summary" class="icon-btn" aria-label="Close summary">×</button>
+      </header>
+      <div class="dialog-body">
+        <p id="summary-message" class="summary-message"></p>
+        <div id="summary-stats" class="summary-stats"></div>
+        <ul id="summary-items" class="summary-items"></ul>
+        <button type="button" id="dismiss-summary" class="print-btn summary-ok">OK</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="warning-modal" class="modal" hidden>
+    <div class="dialog warning-dialog" role="dialog" aria-modal="true" aria-labelledby="warning-title">
+      <header class="dialog-header">
+        <h2 id="warning-title">Unsupported files</h2>
+        <button type="button" id="warning-close" class="icon-btn" aria-label="Close">×</button>
+      </header>
+      <div class="dialog-body">
+        <p id="warning-message" class="summary-message"></p>
+        <button type="button" id="warning-ok" class="secondary-btn warning-ok">OK</button>
+      </div>
+    </div>
+  </div>
+  <div id="drop-overlay" class="drop-overlay" aria-hidden="true">
+    <div>
+      <strong>Drop to add to the list</strong>
+      <p>Files and folders stay where they are.</p>
+    </div>
+  </div>
+  <div id="live" class="sr-only" aria-live="polite"></div>
+  <script src="/app.js?v=desk39"></script>
+</body>
+</html>
