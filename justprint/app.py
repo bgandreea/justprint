@@ -19,7 +19,7 @@ from pathlib import Path
 
 from PIL import Image
 
-from spoolmate.pages import (
+from justprint.pages import (
     SheetProgress,
     filter_pages,
     iter_groups,
@@ -27,9 +27,9 @@ from spoolmate.pages import (
     physical_sheets_for_settings,
     sheet_page_groups,
 )
-from spoolmate.officeconvert import is_convertible
-from spoolmate.papers import PAPER_KEYS
-from spoolmate.render import (
+from justprint.officeconvert import is_convertible
+from justprint.papers import PAPER_KEYS
+from justprint.render import (
     classify,
     compose_nup,
     decorate_page,
@@ -43,14 +43,14 @@ from spoolmate.render import (
     render_test_page,
     RenderError,
 )
-from spoolmate.options import (
+from justprint.options import (
     PAGE_OPTION_DEFAULTS,
     apply_option_setting,
     merge_option_defaults,
     preset_option_block,
     public_option_settings,
 )
-from spoolmate.spool import (
+from justprint.spool import (
     HAS_SPOOL,
     SPOOL_ERROR,
     SpoolError,
@@ -229,12 +229,12 @@ _DEVICE_NAME = re.compile(r"(COM|LPT)[1-9]")
 
 
 def state_path() -> Path:
-    override = os.environ.get("SPOOLMATE_HOME")
+    override = os.environ.get("JUSTPRINT_HOME")
     if override:
         root = Path(override)
     else:
         appdata = Path(os.environ.get("APPDATA") or Path.home())
-        root = appdata / "SpoolMate"
+        root = appdata / "JustPrint"
     root.mkdir(parents=True, exist_ok=True)
     return root / "settings.json"
 
@@ -392,14 +392,14 @@ class App:
         self.thread: threading.Thread | None = None
         self.window = None
         self._list_discarded = False
-        self.executor = ThreadPoolExecutor(max_workers=2, thread_name_prefix="spoolmate-read")
+        self.executor = ThreadPoolExecutor(max_workers=2, thread_name_prefix="justprint-read")
         self.preview_cache: dict[tuple, bytes] = {}
         self.preview_lock = threading.Lock()
         self._dialogs = DialogBridge()
         self._printer_names: list[str] = []
         self._printer_names_at = 0.0
         self._status_cache: dict[str, tuple[float, dict]] = {}
-        raw_delay = os.environ.get("SPOOLMATE_PRACTICE_DELAY", "")
+        raw_delay = os.environ.get("JUSTPRINT_PRACTICE_DELAY", "")
         try:
             self.practice_delay = float(raw_delay) if raw_delay else 0.0
         except ValueError:
@@ -642,8 +642,8 @@ class App:
         if not paths:
             return {"cancelled": True}
         path = Path(paths[0])
-        if path.suffix.lower() != ".smset":
-            path = path.with_suffix(".smset")
+        if path.suffix.lower() != ".jpset":
+            path = path.with_suffix(".jpset")
         payload = self._preset_payload()
         path.write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
         self._set_notice(f"Saved settings to {path.name}.")
@@ -776,7 +776,7 @@ class App:
             self.thread = threading.Thread(
                 target=self._worker,
                 args=(test_page,),
-                name="spoolmate-job",
+                name="justprint-job",
                 daemon=True,
             )
             self.thread.start()
@@ -795,7 +795,7 @@ class App:
         except SpoolError as exc:
             outcome = "error"
             self._set_job(message=str(exc))
-            print(f"SpoolMate: {exc}", flush=True)
+            print(f"JustPrint: {exc}", flush=True)
         except Exception as exc:
             outcome = "error"
             self._set_job(message=f"Print failed: {exc}")
@@ -831,7 +831,7 @@ class App:
             return "stopped"
         image = prepare(render_test_page(settings), settings)
         orientation = orientation_for(image, settings["orientation"])
-        sink.begin_document("SpoolMate test page", orientation, settings)
+        sink.begin_document("JustPrint test page", orientation, settings)
         started = True
         try:
             sent = sink.draw(image, orientation)
@@ -968,7 +968,7 @@ class App:
                         )
                     )
                     probe_image = prepare(probe.render(probe_group[0] - 1, "print"), settings)
-                    sink.begin_document("SpoolMate", orientation_for(probe_image, settings["orientation"]), settings)
+                    sink.begin_document("JustPrint", orientation_for(probe_image, settings["orientation"]), settings)
                     started = True
                 finally:
                     probe.close()
@@ -978,7 +978,7 @@ class App:
                         raise probe_error
                     raise RenderError(f"Could not open {first_item.name}")
                 stand_in = prepare(labeled_separator(settings, f"Missing · {first_item.name}"), settings)
-                sink.begin_document("SpoolMate", orientation_for(stand_in, settings["orientation"]), settings)
+                sink.begin_document("JustPrint", orientation_for(stand_in, settings["orientation"]), settings)
                 started = True
 
             for index, item in enumerate(items, start=1):
@@ -1346,7 +1346,7 @@ class App:
             return 0
         if pages_sent <= 0 or pages_sent % 2 == 0:
             return 0
-        from spoolmate.render import blank_page
+        from justprint.render import blank_page
 
         image = blank_page(settings)
         sent = sink.draw(image, orientation_for(image, settings["orientation"]))
@@ -1529,7 +1529,7 @@ class App:
             try:
                 return _webview_choose(window, kind)
             except Exception as exc:
-                print(f"SpoolMate dialog: {exc}", flush=True)
+                print(f"JustPrint dialog: {exc}", flush=True)
         try:
             return self._dialogs.ask(kind)
         except Exception as exc:
@@ -1710,7 +1710,7 @@ class App:
         }
         preset.update(preset_option_block(settings))
         return {
-            "format": "spoolmate-settings",
+            "format": "justprint-settings",
             "schemaVersion": 1,
             "app": "1.0.0",
             "printer": settings.get("printer", ""),
@@ -1783,7 +1783,7 @@ class App:
             )
         else:
             lines = [
-                "SpoolMate report",
+                "JustPrint report",
                 str(summary.get("message") or ""),
                 f"Sheets: {summary.get('sheets', 0)}",
                 f"Printed: {summary.get('printed', 0)}",
@@ -2092,14 +2092,14 @@ def _webview_choose(window, kind: str) -> list[str]:
         chosen = window.create_file_dialog(
             webview.FileDialog.OPEN,
             allow_multiple=False,
-            file_types=("SpoolMate settings (*.smset)", "All files (*.*)"),
+            file_types=("JustPrint settings (*.jpset)", "All files (*.*)"),
         )
     elif kind == "save_preset":
         chosen = window.create_file_dialog(
             webview.FileDialog.SAVE,
             allow_multiple=False,
-            file_types=("SpoolMate settings (*.smset)", "All files (*.*)"),
-            save_filename="Print settings.smset",
+            file_types=("JustPrint settings (*.jpset)", "All files (*.*)"),
+            save_filename="Print settings.jpset",
         )
     else:
         chosen = window.create_file_dialog(webview.FileDialog.FOLDER)
@@ -2131,7 +2131,7 @@ class DialogBridge:
         with self._lock:
             if self._thread is not None:
                 return
-            self._thread = threading.Thread(target=self._loop, name="spoolmate-dialogs", daemon=True)
+            self._thread = threading.Thread(target=self._loop, name="justprint-dialogs", daemon=True)
             self._thread.start()
 
     def _loop(self) -> None:
@@ -2161,7 +2161,7 @@ class DialogBridge:
                         parent=root,
                         title="Load settings",
                         initialdir=start,
-                        filetypes=(("SpoolMate settings", "*.smset"), ("All files", "*.*")),
+                        filetypes=(("JustPrint settings", "*.jpset"), ("All files", "*.*")),
                     )
                     paths = [chosen] if chosen else []
                 elif kind == "save_preset":
@@ -2169,9 +2169,9 @@ class DialogBridge:
                         parent=root,
                         title="Save settings",
                         initialdir=start,
-                        defaultextension=".smset",
-                        initialfile="Print settings.smset",
-                        filetypes=(("SpoolMate settings", "*.smset"), ("All files", "*.*")),
+                        defaultextension=".jpset",
+                        initialfile="Print settings.jpset",
+                        filetypes=(("JustPrint settings", "*.jpset"), ("All files", "*.*")),
                     )
                     paths = [chosen] if chosen else []
                 else:

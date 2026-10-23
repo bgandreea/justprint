@@ -17,6 +17,6 @@ build.bat
 sign.bat
 run.bat
 requirements-dev.txt
-spoolmate.spec
+justprint.spec
 version_info.txt
-spoolmate/selfcheck.py
+justprint/selfcheck.py

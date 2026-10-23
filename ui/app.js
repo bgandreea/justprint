@@ -226,7 +226,7 @@ async function refresh() {
       apply(await response.json());
     } while (refreshAgain);
   } catch (error) {
-    if (!view.last) showError(error.message || "SpoolMate is not responding.");
+    if (!view.last) showError(error.message || "JustPrint is not responding.");
   } finally {
     refreshing = false;
   }
@@ -1037,7 +1037,7 @@ window.addEventListener("drop", (event) => {
     view.dropText = "";
     showError(error.message || "Could not add the dropped files.");
   };
-  if (!window.__spoolmateDrop) {
+  if (!window.__justprintDrop) {
     addCapturedDrop(captured).catch(failed);
     return;
   }
@@ -1182,29 +1182,61 @@ function bindWindowChrome() {
     if (maximized !== null) banner.classList.toggle("is-maximized", Boolean(maximized));
   });
   const drag = document.querySelector(".banner-drag");
-  drag.addEventListener("dblclick", async () => {
+  let dragState = null;
+  let lastClick = null;
+  let toggledAt = 0;
+  const endDrag = () => {
+    dragState = null;
+    window.removeEventListener("mousemove", onMove);
+    window.removeEventListener("mouseup", endDrag);
+  };
+  const toggleFromTitle = async () => {
+    if (Date.now() - toggledAt < 400) return;
+    toggledAt = Date.now();
+    endDrag();
     const maximized = await call("toggle_maximize");
     if (maximized !== null) banner.classList.toggle("is-maximized", Boolean(maximized));
-  });
-  let last = null;
+  };
   const onMove = (ev) => {
-    if (!last) return;
+    if (!dragState) return;
+    if (!ev.screenX && !ev.screenY) return;
+    const dx = ev.screenX - dragState.x;
+    const dy = ev.screenY - dragState.y;
+    if (!dragState.moved) {
+      if (Math.abs(dx) > 200 || Math.abs(dy) > 200) return;
+      if (Math.abs(dx) < 6 && Math.abs(dy) < 6) return;
+      dragState.moved = true;
+      lastClick = null;
+    }
+    if (Math.abs(dx) > 250 || Math.abs(dy) > 250) return;
+    dragState.x = ev.screenX;
+    dragState.y = ev.screenY;
     const api = window.pywebview && window.pywebview.api;
     if (!api || typeof api.nudge_window !== "function") return;
-    const dx = ev.screenX - last.x;
-    const dy = ev.screenY - last.y;
-    last = { x: ev.screenX, y: ev.screenY };
     if (dx || dy) api.nudge_window(dx, dy);
   };
-  const onUp = () => {
-    last = null;
-    window.removeEventListener("mousemove", onMove);
-    window.removeEventListener("mouseup", onUp);
-  };
+  drag.addEventListener("dblclick", (ev) => {
+    ev.preventDefault();
+    toggleFromTitle();
+  });
   drag.addEventListener("mousedown", (ev) => {
     if (ev.button !== 0) return;
-    last = { x: ev.screenX, y: ev.screenY };
+    if (!ev.screenX && !ev.screenY) return;
+    const now = Date.now();
+    if (
+      lastClick &&
+      now - lastClick.time < 500 &&
+      Math.abs(ev.screenX - lastClick.x) < 8 &&
+      Math.abs(ev.screenY - lastClick.y) < 8
+    ) {
+      ev.preventDefault();
+      lastClick = null;
+      toggleFromTitle();
+      return;
+    }
+    lastClick = { time: now, x: ev.screenX, y: ev.screenY };
+    dragState = { x: ev.screenX, y: ev.screenY, moved: false };
     window.addEventListener("mousemove", onMove);
-    window.addEventListener("mouseup", onUp);
+    window.addEventListener("mouseup", endDrag);
   });
 }

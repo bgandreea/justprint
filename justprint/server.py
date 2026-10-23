@@ -1,4 +1,4 @@
-"""Local HTTP server for the SpoolMate window."""
+"""Local HTTP server for the JustPrint window."""
 
 from __future__ import annotations
 
@@ -7,8 +7,8 @@ import threading
 import urllib.parse
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
-from spoolmate.app import App
-from spoolmate.paths import ui_dir
+from justprint.app import App
+from justprint.paths import ui_dir
 
 STATIC = {
     "/": ("index.html", "text/html; charset=utf-8"),
@@ -22,7 +22,7 @@ STATIC = {
 def serve(app: App) -> ThreadingHTTPServer:
     handler = make_handler(app)
     httpd = ThreadingHTTPServer(("127.0.0.1", 0), handler)
-    thread = threading.Thread(target=httpd.serve_forever, name="spoolmate-http", daemon=True)
+    thread = threading.Thread(target=httpd.serve_forever, name="justprint-http", daemon=True)
     thread.start()
     return httpd
 

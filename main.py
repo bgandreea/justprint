@@ -1,4 +1,4 @@
-"""Launch SpoolMate."""
+"""Launch JustPrint."""
 
 from __future__ import annotations
 
@@ -11,14 +11,14 @@ import threading
 import time
 import webbrowser
 
-from spoolmate.app import App
-from spoolmate.paths import app_root
-from spoolmate.server import serve
+from justprint.app import App
+from justprint.paths import app_root
+from justprint.server import serve
 
 
 def main() -> None:
     if sys.platform != "win32":
-        print("SpoolMate sends jobs through the Windows print spooler, so it needs Windows.")
+        print("JustPrint sends jobs through the Windows print spooler, so it needs Windows.")
         sys.exit(1)
 
     parser = argparse.ArgumentParser(description="Print a queue of files and folders.")
@@ -41,7 +41,7 @@ def main() -> None:
     _wait_until_listening(httpd)
     host, port = httpd.server_address
     url = f"http://{host}:{port}/"
-    print(f"SpoolMate is running at {url}")
+    print(f"JustPrint is running at {url}")
     open_window(app, url, force_browser=args.browser)
 
 
@@ -57,7 +57,7 @@ def open_window(app: App, url: str, force_browser: bool = False) -> None:
             width = min(WINDOW_MAX_WIDTH, max(WINDOW_MIN_WIDTH, width))
             chrome = WindowChrome()
             window = webview.create_window(
-                "SpoolMate",
+                "JustPrint - A batch printing tool",
                 url,
                 width=width,
                 height=max(WINDOW_MIN_HEIGHT, height),
@@ -72,14 +72,14 @@ def open_window(app: App, url: str, force_browser: bool = False) -> None:
             app.window = window
             chrome._window = window
             window.events.loaded += lambda: loaded.set()
-            window.events.loaded += lambda: window.set_title("SpoolMate")
+            window.events.loaded += lambda: window.set_title("JustPrint - A batch printing tool")
             window.events.loaded += lambda: install_file_drop(window, app)
             window.events.loaded += lambda: reveal_window(window)
             window.events.maximized += lambda: sync_maximized(window, True)
             window.events.restored += lambda: sync_maximized(window, False)
             window.events.resized += lambda w, h: save_window_size(app, w, h)
             started = time.time()
-            icon = app_root() / "spoolmate.ico"
+            icon = app_root() / "justprint.ico"
             webview.start(icon=str(icon) if icon.is_file() else None)
             # A normal close happens after the page has loaded. A failed window returns immediately.
             if loaded.is_set() or time.time() - started > 3:
@@ -92,7 +92,7 @@ def open_window(app: App, url: str, force_browser: bool = False) -> None:
     if getattr(sys, "frozen", False):
         while True:
             time.sleep(1)
-    print("Press Enter to stop SpoolMate.")
+    print("Press Enter to stop JustPrint.")
     try:
         input()
     except EOFError:
@@ -123,15 +123,7 @@ class WindowChrome:
             self._window.minimize()
 
     def toggle_maximize(self) -> bool:
-        if self._window is None:
-            return False
-        hwnd = int(self._window.native.Handle.ToInt64())
-        if ctypes.windll.user32.IsZoomed(hwnd):
-            self._window.restore()
-            return False
-        remember_work_area(self._window)
-        self._window.maximize()
-        return True
+        return toggle_window_zoom(self._window)
 
     def close_window(self) -> None:
         if self._window is not None:
@@ -159,11 +151,23 @@ class WindowChrome:
             ctypes.c_uint,
         ]
         hwnd = int(self._window.native.Handle.ToInt64())
+        try:
+            dx = int(dx)
+            dy = int(dy)
+        except (TypeError, ValueError):
+            return
+        if dx == 0 and dy == 0:
+            return
+        # A double-click can report a bogus jump. That throws the window off-screen.
+        if abs(dx) > 250 or abs(dy) > 250:
+            return
         if user32.IsZoomed(hwnd):
             user32.ShowWindow(hwnd, 9)  # SW_RESTORE, before the move
             sync_maximized(self._window, False)
         rect = _RECT()
         if not user32.GetWindowRect(hwnd, ctypes.byref(rect)):
+            return
+        if rect.left < -10000 or rect.top < -10000:
             return
         scale = (user32.GetDpiForWindow(hwnd) or 96) / 96
         user32.SetWindowPos(
@@ -177,74 +181,42 @@ class WindowChrome:
         )
 
 
-def _work_area(window):
-    """Screen area that stays above the taskbar, in physical pixels."""
-    try:
-        import clr
-
-        clr.AddReference("System.Windows.Forms")
-        from System.Windows.Forms import Screen
-
-        return Screen.FromHandle(window.native.Handle).WorkingArea
-    except Exception:
-        return None
-
-
 def remember_work_area(window) -> None:
-    """Tell WinForms the maximized size, so the taskbar stays visible."""
-    area = _work_area(window)
-    if area is None:
-        return
-    try:
-        window.native.MaximizedBounds = area
-    except Exception:
-        pass
+    """Kept for older call sites. MaximizedBounds makes Win+Up toggle instead of staying maximized."""
+    return
 
 
-def snap_to_work_area(window) -> None:
-    """A borderless window otherwise maximizes over the taskbar."""
-    remember_work_area(window)
-    area = _work_area(window)
-    if area is None:
-        return
+def toggle_window_zoom(window) -> bool:
+    """Maximize or restore without letting a borderless window leave the screen."""
+    if window is None:
+        return False
     try:
         hwnd = int(window.native.Handle.ToInt64())
     except Exception:
-        return
+        return False
     user32 = ctypes.WinDLL("user32", use_last_error=True)
     user32.IsZoomed.argtypes = [ctypes.c_void_p]
     user32.IsZoomed.restype = ctypes.c_int
-    user32.GetWindowRect.argtypes = [ctypes.c_void_p, ctypes.POINTER(_RECT)]
-    user32.SetWindowPos.argtypes = [
-        ctypes.c_void_p,
-        ctypes.c_void_p,
-        ctypes.c_int,
-        ctypes.c_int,
-        ctypes.c_int,
-        ctypes.c_int,
-        ctypes.c_uint,
-    ]
-    if not user32.IsZoomed(hwnd):
-        return
-    rect = _RECT()
-    if not user32.GetWindowRect(hwnd, ctypes.byref(rect)):
-        return
-    if (
-        rect.left == int(area.X)
-        and rect.top == int(area.Y)
-        and rect.right - rect.left == int(area.Width)
-        and rect.bottom - rect.top == int(area.Height)
-    ):
-        return
-    user32.SetWindowPos(
-        hwnd,
-        None,
-        int(area.X),
-        int(area.Y),
-        int(area.Width),
-        int(area.Height),
-        0x0004 | 0x0010,
-    )
+    user32.IsIconic.argtypes = [ctypes.c_void_p]
+    user32.IsIconic.restype = ctypes.c_int
+    user32.ShowWindow.argtypes = [ctypes.c_void_p, ctypes.c_int]
+    user32.ShowWindow.restype = ctypes.c_int
+    if user32.IsIconic(hwnd):
+        user32.ShowWindow(hwnd, 9)  # SW_RESTORE
+    if user32.IsZoomed(hwnd):
+        user32.ShowWindow(hwnd, 9)
+        sync_maximized(window, False)
+        return False
+    remember_work_area(window)
+    user32.ShowWindow(hwnd, 3)  # SW_MAXIMIZE
+    snap_to_work_area(window)
+    sync_maximized(window, True)
+    return True
+
+
+def snap_to_work_area(window) -> None:
+    """The maximized client is cropped in WM_NCCALCSIZE. Moving it here breaks Win+Up."""
+    return
 
 
 def reveal_window(window) -> None:
@@ -288,8 +260,14 @@ _enforcing_frame = False
 
 
 def _chrome_style(style: int) -> int:
-    """Resize border only. A caption here is what freezes the window and paints the Windows bar."""
-    return (style & ~0x80000000 & ~0x00C00000) | 0x00040000
+    """A real caption, with the bar itself removed in WM_NCCALCSIZE.
+
+    Win+arrow snap uses the caption to decide maximize and restore. Stripping it
+    makes a second Win+Up throw the window off the screen. The blue banner is
+    still the visible title bar.
+    """
+    # Drop WS_POPUP. Keep WS_OVERLAPPEDWINDOW (caption, resize, min, max, menu).
+    return (style & ~0x80000000) | 0x00CF0000
 
 
 class _POINT(ctypes.Structure):
@@ -311,6 +289,18 @@ class _MONITORINFO(ctypes.Structure):
         ("rcMonitor", _RECT),
         ("rcWork", _RECT),
         ("dwFlags", ctypes.c_ulong),
+    ]
+
+
+class _WINDOWPOS(ctypes.Structure):
+    _fields_ = [
+        ("hwnd", ctypes.c_void_p),
+        ("hwndInsertAfter", ctypes.c_void_p),
+        ("x", ctypes.c_int),
+        ("y", ctypes.c_int),
+        ("cx", ctypes.c_int),
+        ("cy", ctypes.c_int),
+        ("flags", ctypes.c_uint),
     ]
 
 
@@ -358,6 +348,81 @@ def keep_frameless(window) -> None:
         _enforcing_frame = False
 
 
+_pending_tile = None
+
+
+def _tile_kind(x: int, y: int, cx: int, cy: int, work) -> bool:
+    """True when the rect is a half or quarter snap on this work area."""
+    width = work.right - work.left
+    height = work.bottom - work.top
+    if cx < width * 0.2 or cy < height * 0.2:
+        return False
+    on_left = abs(x - work.left) <= 16
+    on_right = abs((x + cx) - work.right) <= 20
+    on_top = y <= work.top + 12
+    on_bottom = abs((y + cy) - work.bottom) <= 24
+    full_w = cx >= width - 40
+    full_h = cy >= height - 40
+    short = height * 0.25 < cy < height - 40
+    narrow = cx < width - 40
+    if full_w and short and (on_top or on_bottom):
+        return True
+    if full_h and narrow and (on_left or on_right):
+        return True
+    if short and narrow and (on_top or on_bottom) and (on_left or on_right):
+        return True
+    return False
+
+
+def _keep_tile(user32, hwnd, lparam) -> None:
+    """WinForms puts the restored rectangle back after a snap from the maximized window.
+
+    The snap itself is the right place. The follow-up restore is what makes the
+    window jump away, so that one move is put back on the snap.
+    """
+    global _pending_tile
+    pos = ctypes.cast(lparam, ctypes.POINTER(_WINDOWPOS))
+    flags = int(pos.contents.flags)
+    if flags & 0x0001 and flags & 0x0002:
+        return
+    x = int(pos.contents.x)
+    y = int(pos.contents.y)
+    cx = int(pos.contents.cx)
+    cy = int(pos.contents.cy)
+    if x <= -8000 or y <= -8000 or cx < 80 or cy < 60:
+        _pending_tile = None
+        return
+    proposed = _RECT(x, y, x + cx, y + cy)
+    monitor = user32.MonitorFromRect(ctypes.byref(proposed), 2)
+    display = _MONITORINFO()
+    display.cbSize = ctypes.sizeof(_MONITORINFO)
+    if not monitor or not user32.GetMonitorInfoW(monitor, ctypes.byref(display)):
+        return
+    kind = _tile_kind(x, y, cx, cy, display.rcWork)
+    if kind:
+        _pending_tile = (x, y, cx, cy, int(ctypes.windll.kernel32.GetTickCount()))
+        return
+    pending = _pending_tile
+    _pending_tile = None
+    if pending is None:
+        return
+    age = int(ctypes.windll.kernel32.GetTickCount()) - pending[4]
+    if age > 200:
+        return
+    # The next move in this same burst is WinForms putting the restored
+    # rectangle back. Put the snap rectangle back instead.
+    pos.contents.x = pending[0]
+    pos.contents.y = pending[1]
+    pos.contents.cx = pending[2]
+    pos.contents.cy = pending[3]
+    pos.contents.flags = flags & ~0x0001 & ~0x0002
+    _pending_tile = pending
+
+
+class _NCCALCSIZE_PARAMS(ctypes.Structure):
+    _fields_ = [("rgrc", _RECT * 3), ("lppos", ctypes.POINTER(_WINDOWPOS))]
+
+
 def install_window_frame(window) -> None:
     """Hide the native title bar and let the blue banner act as one.
 
@@ -395,10 +460,13 @@ def install_window_frame(window) -> None:
     user32.IsZoomed.restype = ctypes.c_int
     user32.MonitorFromWindow.argtypes = [ctypes.c_void_p, ctypes.c_uint]
     user32.MonitorFromWindow.restype = ctypes.c_void_p
+    user32.MonitorFromRect.argtypes = [ctypes.POINTER(_RECT), ctypes.c_uint]
+    user32.MonitorFromRect.restype = ctypes.c_void_p
     user32.GetMonitorInfoW.argtypes = [ctypes.c_void_p, ctypes.c_void_p]
     user32.GetMonitorInfoW.restype = ctypes.c_int
     user32.ScreenToClient.argtypes = [ctypes.c_void_p, ctypes.POINTER(_POINT)]
     user32.GetClientRect.argtypes = [ctypes.c_void_p, ctypes.POINTER(_RECT)]
+    user32.GetWindowRect.argtypes = [ctypes.c_void_p, ctypes.POINTER(_RECT)]
     comctl32.SetWindowSubclass.argtypes = [
         ctypes.c_void_p,
         subclass_proc,
@@ -441,49 +509,100 @@ def install_window_frame(window) -> None:
             desired = _chrome_style(style)
             if desired != style:
                 user32.SetWindowLongPtrW(hwnd, -16, desired)
-            # Client area covers the whole window, so a caption cannot be drawn.
+            # DefWindowProc has to see this message. Skipping it makes Win+arrow
+            # from a maximized window restore instead of tiling.
+            if not wparam:
+                return default()
+            params = ctypes.cast(lparam, ctypes.POINTER(_NCCALCSIZE_PARAMS))
+            suggested = params.contents.rgrc[0]
+            suggested_rect = _RECT(suggested.left, suggested.top, suggested.right, suggested.bottom)
+            default()
+            slot = params.contents.rgrc[0]
+            slot.left = suggested_rect.left
+            slot.top = suggested_rect.top
+            slot.right = suggested_rect.right
+            slot.bottom = suggested_rect.bottom
+            monitor = user32.MonitorFromRect(ctypes.byref(suggested_rect), 2)
+            display = _MONITORINFO()
+            display.cbSize = ctypes.sizeof(_MONITORINFO)
+            if monitor and user32.GetMonitorInfoW(monitor, ctypes.byref(display)):
+                work = display.rcWork
+                covers = (
+                    suggested_rect.left <= work.left
+                    and suggested_rect.top <= work.top
+                    and suggested_rect.right >= work.right
+                    and suggested_rect.bottom >= work.bottom - 2
+                )
+                if covers or user32.IsZoomed(hwnd):
+                    slot.left = work.left
+                    slot.top = work.top
+                    slot.right = work.right
+                    slot.bottom = work.bottom
+            params.contents.rgrc[0] = slot
             return 0
         if msg == 0x0024:  # WM_GETMINMAXINFO
             result = default()
             info = ctypes.cast(lparam, ctypes.POINTER(_MINMAXINFO))
             dpi = user32.GetDpiForWindow(hwnd) or 96
             scale = dpi / 96
+            # Half and quarter snaps are smaller than the layout. A large minimum
+            # makes Windows abandon the snap and restore the window, which is the
+            # jump off the maximized size. The layout size is applied afterwards.
             min_track = info.contents.ptMinTrackSize
-            min_track.x = int(WINDOW_MIN_WIDTH * scale)
-            min_track.y = int(WINDOW_MIN_HEIGHT * scale)
+            min_track.x = int(320 * scale)
+            min_track.y = int(240 * scale)
             info.contents.ptMinTrackSize = min_track
-            # Fill the work area, not the whole monitor, so the taskbar stays visible.
-            # ptMaxTrackSize stays large enough that this is not clamped to the drag limit.
+            # Leave ptMaxSize and ptMaxPosition alone. Changing them makes a second
+            # Win+Up restore the window. The client is cropped to the work area in
+            # WM_NCCALCSIZE, so the taskbar stays visible. The drag limit must not
+            # clamp that maximized size.
             monitor = user32.MonitorFromWindow(hwnd, 2)
             display = _MONITORINFO()
             display.cbSize = ctypes.sizeof(_MONITORINFO)
             if monitor and user32.GetMonitorInfoW(monitor, ctypes.byref(display)):
                 work = display.rcWork
-                max_size = _POINT(work.right - work.left, work.bottom - work.top)
-                max_pos = _POINT(work.left, work.top)
-                info.contents.ptMaxSize = max_size
-                info.contents.ptMaxPosition = max_pos
                 max_track = info.contents.ptMaxTrackSize
-                if max_track.x < max_size.x:
-                    max_track.x = max_size.x
-                if max_track.y < max_size.y:
-                    max_track.y = max_size.y
+                full_w = work.right - work.left
+                full_h = work.bottom - work.top
+                if max_track.x < full_w:
+                    max_track.x = full_w
+                if max_track.y < full_h:
+                    max_track.y = full_h
                 info.contents.ptMaxTrackSize = max_track
             return result
         if msg == 0x0214:  # WM_SIZING: drag limit only, maximize is not affected
             rect_ptr = ctypes.cast(lparam, ctypes.POINTER(_RECT))
             rect = rect_ptr.contents
             dpi = user32.GetDpiForWindow(hwnd) or 96
-            max_w = int(WINDOW_MAX_WIDTH * dpi / 96)
+            scale = dpi / 96
+            max_w = int(WINDOW_MAX_WIDTH * scale)
+            min_w = int(WINDOW_MIN_WIDTH * scale)
+            min_h = int(WINDOW_MIN_HEIGHT * scale)
             if rect.right - rect.left > max_w:
                 if wparam in (1, 4, 7):
                     rect.left = rect.right - max_w
                 else:
                     rect.right = rect.left + max_w
-                rect_ptr.contents = rect
+            if rect.right - rect.left < min_w:
+                if wparam in (1, 4, 7):
+                    rect.left = rect.right - min_w
+                else:
+                    rect.right = rect.left + min_w
+            if rect.bottom - rect.top < min_h:
+                if wparam in (3, 4, 5):
+                    rect.top = rect.bottom - min_h
+                else:
+                    rect.bottom = rect.top + min_h
+            rect_ptr.contents = rect
             return 1
+        if msg == 0x0046:  # WM_WINDOWPOSCHANGING
+            _keep_tile(user32, hwnd, lparam)
         if msg == 0x0084:  # WM_NCHITTEST
             return _caption_hit(user32, hwnd, lparam)
+        if msg == 0x00A3 and wparam in (2, 12):  # double-click caption or top edge
+            # The default handler snaps or hides a borderless window. Maximize instead.
+            toggle_window_zoom(window)
+            return 0
         return default()
 
     def proc(hwnd, msg, wparam, lparam, uid, data):
@@ -538,6 +657,15 @@ def install_window_frame(window) -> None:
     user32.SetWindowLongPtrW(hwnd, -16, style)
 
     remember_work_area(window)
+    # The form minimum is the layout size, which is taller than a top-half snap
+    # and wider than a side snap. Windows then cancels the snap and jumps back
+    # to the restored window. Dragging still stops at the layout size.
+    try:
+        from System.Drawing import Size
+
+        window.native.MinimumSize = Size(320, 240)
+    except Exception:
+        pass
     margins = _MARGINS(1, 1, 1, 1)
     dwmapi.DwmExtendFrameIntoClientArea(hwnd, ctypes.byref(margins))
     preference = ctypes.c_int(2)  # DWMWCP_ROUND
@@ -564,10 +692,13 @@ def _caption_hit(user32, hwnd, lparam) -> int:
     zoomed = bool(user32.IsZoomed(hwnd))
     cx, cy = point.x, point.y
     on_buttons = 0 <= cy < banner and cx >= width - 3 * button
+    in_banner = 0 <= cy < banner and not on_buttons
     if not zoomed and not on_buttons:
         left = cx < border
         right = cx >= width - border
-        top = cy < border
+        # The title bar is not a top resize edge. That double-click snaps the
+        # window upward instead of maximizing it.
+        top = cy < border and not in_banner
         bottom = cy >= height - border
         if top and left:
             return 13
@@ -585,7 +716,7 @@ def _caption_hit(user32, hwnd, lparam) -> int:
             return 12
         if bottom:
             return 15
-    if 0 <= cy < banner:
+    if in_banner:
         return 1
     return 1
 
@@ -649,7 +780,7 @@ def install_file_drop(window, app: App) -> None:
         # dragover is handled in the page. A Python listener here would run on every
         # drag tick. The drop listener is what receives the real file paths.
         window.dom.document.on("drop", DOMEventHandler(on_drop, prevent_default=True))
-        window.evaluate_js("window.__spoolmateDrop = true")
+        window.evaluate_js("window.__justprintDrop = true")
     except Exception as exc:
         print(f"Drag and drop setup failed ({exc}). Use Add files.", flush=True)
 
@@ -672,7 +803,7 @@ def _wait_until_listening(httpd, timeout: float = 5) -> None:
                 return
         except OSError:
             time.sleep(0.02)
-    raise RuntimeError("SpoolMate did not start")
+    raise RuntimeError("JustPrint did not start")
 
 
 if __name__ == "__main__":

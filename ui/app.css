@@ -69,6 +69,7 @@ svg { width: 22px; height: 22px; display: block; }
 }
 .brand-mark { width: 28px; height: 28px; object-fit: contain; }
 .brand strong { font-size: 18px; font-weight: 700; letter-spacing: -0.02em; }
+.brand-tag { font-size: 15px; font-weight: 500; letter-spacing: 0; }
 .window-controls {
   display: flex;
   align-self: stretch;

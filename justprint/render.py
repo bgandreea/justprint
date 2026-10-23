@@ -7,8 +7,8 @@ from datetime import datetime
 
 from PIL import Image, ImageDraw, ImageFont, ImageOps
 
-from spoolmate.papers import paper_inches as catalog_inches
-from spoolmate.papers import paper_name
+from justprint.papers import paper_inches as catalog_inches
+from justprint.papers import paper_name
 
 Image.MAX_IMAGE_PIXELS = 40_000_000
 
@@ -174,7 +174,7 @@ def apply_watermark(image: Image.Image, settings: dict, *, page: int) -> Image.I
     page_range = str(wm.get("page_range") or "").strip()
     if page_range:
         try:
-            from spoolmate.pages import parse_range
+            from justprint.pages import parse_range
 
             allowed = parse_range(page_range, max(page, 1))
             if page not in allowed:
@@ -253,7 +253,7 @@ def _expand_stamp(text: str, *, page: int, page_count: int, name: str) -> str:
 
 def compose_nup(images: list[Image.Image | None], settings: dict) -> Image.Image:
     """Compose page images onto one sheet (n-up / booklet face)."""
-    from spoolmate.pages import nup_grid
+    from justprint.pages import nup_grid
 
     n_up = 2 if settings.get("booklet") else int(settings.get("n_up") or 1)
     cols, rows = nup_grid(n_up)
@@ -345,7 +345,7 @@ def render_test_page(settings: dict) -> Image.Image:
     title_font = _font(int(dpi * 0.34))
     body_font = _font(int(dpi * 0.16))
     small_font = _font(int(dpi * 0.12))
-    draw.text((int(dpi * 0.45), int(dpi * 0.24)), "SpoolMate", font=title_font, fill="white")
+    draw.text((int(dpi * 0.45), int(dpi * 0.24)), "JustPrint", font=title_font, fill="white")
 
     lines = [
         "Test page",

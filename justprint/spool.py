@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import time
 
-from spoolmate.papers import devmode_paper, match_win_paper
+from justprint.papers import devmode_paper, match_win_paper
 
 try:
     import win32con
@@ -284,7 +284,7 @@ class PracticeSink:
         self.open = False
 
     def wait_for_job(self, on_status=None, expected_pages: int = 0, sheets_per_minute: float = DEFAULT_SHEETS_PER_MINUTE) -> bool:
-        # Practice runs stay fast unless SPOOLMATE_PRACTICE_DELAY is set.
+        # Practice runs stay fast unless JUSTPRINT_PRACTICE_DELAY is set.
         _ = sheets_per_minute
         total = max(1, int(expected_pages or self.pages or 1))
         step = self.delay if self.delay > 0 else 0.02
@@ -322,7 +322,7 @@ class WindowsSink:
         self._devmode = None
         self._started = False
         self._orientation = "portrait"
-        self._job_name = "SpoolMate"
+        self._job_name = "JustPrint"
         self._settings: dict = {}
         self._job_id: int | None = None
         self._pending_job_id: int | None = None
@@ -786,4 +786,4 @@ def _restore_devmode(devmode, saved: dict) -> None:
 def _clean_job_name(name: str) -> str:
     cleaned = "".join(ch if ch.isprintable() else " " for ch in (name or ""))
     cleaned = " ".join(cleaned.split())
-    return (cleaned or "SpoolMate")[:120]
+    return (cleaned or "JustPrint")[:120]
