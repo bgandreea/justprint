@@ -91,6 +91,7 @@ jobs:
             --hidden-import win32gui \
             --hidden-import win32con \
             --hidden-import win32api \
+            --hidden-import win32timezone \
             --collect-all webview \
             --collect-all pythonnet \
             --collect-all pypdfium2 \
