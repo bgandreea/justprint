@@ -130,14 +130,16 @@ jobs:
         run: |
           set -euo pipefail
           version="$(python -c 'import justprint; print(justprint.__version__)')"
-          notes="$(mktemp)"
-          cat > "${notes}" <<EOF
-          JustPrint ${version} for Windows.
-
-          Fixes a crash when printing several PDFs in one run. Reading the folder, showing the preview, and sending the job no longer open PDFs at the same time.
-
-          Unzip the folder and run JustPrint.exe. Keep the whole folder together.
-          EOF
+          # Notes are written per version in RELEASE_NOTES.md. The first
+          # line has to name this version, so an old paragraph cannot be
+          # published again by mistake.
+          expected="JustPrint ${version} for Windows."
+          first="$(grep -m1 -v '^$' RELEASE_NOTES.md | tr -d '\r')"
+          if [[ "${first}" != "${expected}" ]]; then
+            echo "RELEASE_NOTES.md must start with: ${expected}" >&2
+            echo "Found: ${first}" >&2
+            exit 1
+          fi
           gh release create "v${version}" "JustPrint-${version}-windows.zip" \
             --title "JustPrint ${version}" \
-            --notes-file "${notes}"
+            --notes-file RELEASE_NOTES.md
