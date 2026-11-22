@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import os
+import threading
 from datetime import datetime
 
 from PIL import Image, ImageDraw, ImageFont, ImageOps
@@ -35,6 +36,13 @@ TEXT_BYTE_LIMIT = 5_000_000
 
 class RenderError(Exception):
     """The file could not be turned into pages."""
+
+
+# PDFium is not thread-safe. Folder scans, previews, and the print job all open
+# PDFs at the same time, and overlapping calls crash the process. Every open
+# document holds this lock until it is closed, so only one thread is inside
+# PDFium at a time. Same-thread reentry is allowed while one file renders.
+pdfium_lock = threading.RLock()
 
 
 def extension_of(path: str) -> str:
@@ -395,34 +403,68 @@ class PageSource:
         self._pdf = None
         self._image = None
         self._text_pages: list[list[str]] | None = None
-        if kind == "pdf":
-            self._pdf = _open_pdf(path)
-            self.page_count = len(self._pdf)
-        elif kind == "image":
-            try:
-                self._image = Image.open(path)
-                self._image.load()
-            except Exception as exc:
-                raise RenderError(f"Could not open this image ({exc})") from exc
-            self.page_count = _frame_count(self._image)
-        else:
-            self._text_pages = _layout_text(path, settings)
-            self.page_count = len(self._text_pages)
-        if self.page_count <= 0:
-            raise RenderError("This file has no pages")
+        self._pdfium_guard = False
+        self._closed = False
+        try:
+            if kind == "pdf":
+                self._attach_pdfium()
+                self.page_count = len(self._pdf)
+            elif kind == "image":
+                try:
+                    self._image = Image.open(path)
+                    self._image.load()
+                except Exception as exc:
+                    raise RenderError(f"Could not open this image ({exc})") from exc
+                self.page_count = _frame_count(self._image)
+            else:
+                self._text_pages = _layout_text(path, settings)
+                self.page_count = len(self._text_pages)
+            if self.page_count <= 0:
+                raise RenderError("This file has no pages")
+        except BaseException:
+            self.close()
+            raise
 
     def close(self) -> None:
-        if self._pdf is not None:
-            self._pdf.close()
+        if self._closed:
+            return
+        self._closed = True
+        try:
+            if self._pdf is not None:
+                try:
+                    self._pdf.close()
+                finally:
+                    self._pdf = None
+            if self._image is not None:
+                try:
+                    self._image.close()
+                finally:
+                    self._image = None
+        finally:
+            self._release_pdfium_lock()
+
+    def release_native(self) -> None:
+        """Close the PDF while the printer finishes, so other files can render.
+
+        The page count stays. The next render opens the file again.
+        """
+        if self._closed or self.kind != "pdf":
+            return
+        try:
+            if self._pdf is not None:
+                self._pdf.close()
+        finally:
             self._pdf = None
-        if self._image is not None:
-            self._image.close()
-            self._image = None
+            self._release_pdfium_lock()
 
     def render(self, index: int, target: str) -> Image.Image:
+        if self._closed:
+            raise RenderError("This file is no longer open")
         if index < 0 or index >= self.page_count:
             raise RenderError(f"Page {index + 1} is not in this file")
         if self.kind == "pdf":
+            if self._pdf is None:
+                self._attach_pdfium()
             return _render_pdf_page(self._pdf, index, target, self.settings)
         if self.kind == "image":
             return _render_image_frame(self._image, index)
@@ -436,6 +478,24 @@ class PageSource:
             self.settings,
             dpi=dpi,
         )
+
+    def _attach_pdfium(self) -> None:
+        if self._pdf is not None:
+            return
+        if not self._pdfium_guard:
+            pdfium_lock.acquire()
+            self._pdfium_guard = True
+        try:
+            self._pdf = _open_pdf(self.path)
+        except BaseException:
+            self._release_pdfium_lock()
+            raise
+
+    def _release_pdfium_lock(self) -> None:
+        if not self._pdfium_guard:
+            return
+        self._pdfium_guard = False
+        pdfium_lock.release()
 
 
 def flatten(image: Image.Image) -> Image.Image:
@@ -468,6 +528,7 @@ def _open_pdf(path: str):
 
 def _render_pdf_page(pdf, index: int, target: str, settings: dict | None = None) -> Image.Image:
     page = pdf[index]
+    bitmap = None
     try:
         width, height = page.get_size()
         width = float(width) or 1
@@ -480,9 +541,15 @@ def _render_pdf_page(pdf, index: int, target: str, settings: dict | None = None)
             if long_side > MAX_RENDER_SIDE:
                 scale *= MAX_RENDER_SIDE / long_side
         bitmap = page.render(scale=scale)
-        return flatten(bitmap.to_pil())
+        # Copy before the bitmap is closed. A later finalizer would call back
+        # into PDFium off this thread and crash a multi-file job.
+        return flatten(bitmap.to_pil()).copy()
     finally:
-        page.close()
+        try:
+            if bitmap is not None:
+                bitmap.close()
+        finally:
+            page.close()
 
 
 def _frame_count(image: Image.Image) -> int:
