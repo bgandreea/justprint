@@ -5,11 +5,13 @@ from __future__ import annotations
 import atexit
 import argparse
 import ctypes
+import os
 import socket
 import sys
 import threading
 import time
 import webbrowser
+from pathlib import Path
 
 from justprint.app import App
 from justprint.paths import app_root
@@ -45,7 +47,23 @@ def main() -> None:
     open_window(app, url, force_browser=args.browser)
 
 
+def unblock_downloaded_files(root: Path) -> None:
+    """Windows marks a browser download as blocked, and then the desktop window cannot load."""
+    if not root.is_dir():
+        return
+    for path in root.rglob("*"):
+        if not path.is_file():
+            continue
+        try:
+            os.remove(f"{path}:Zone.Identifier")
+        except OSError:
+            pass
+
+
 def open_window(app: App, url: str, force_browser: bool = False) -> None:
+    unblock_downloaded_files(app_root())
+    if getattr(sys, "frozen", False):
+        unblock_downloaded_files(Path(sys.executable).resolve().parent)
     if not force_browser:
         try:
             import webview
