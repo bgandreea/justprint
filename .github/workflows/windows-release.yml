@@ -17,7 +17,9 @@ jobs:
 
       - uses: actions/setup-python@v5
         with:
-          python-version: "3.15"
+          # 3.15.2 changed Python's internal ABI. pythonnet then cannot
+          # start the desktop window, and JustPrint opens in the browser.
+          python-version: "3.15.0"
 
       - name: Install
         shell: bash
