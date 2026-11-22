@@ -24,6 +24,7 @@ const els = {
   jobSheets: $("job-sheets"),
   openSettings: $("open-settings"),
   toPrint: $("to-print"),
+  reverseList: $("reverse-list"),
   removePrinted: $("remove-printed"),
   clear: $("clear"),
   selectAll: $("select-all"),
@@ -144,6 +145,7 @@ const view = {
   dropText: "",
   summaryKey: "",
   warningKey: "",
+  dragging: false,
 };
 
 let chain = Promise.resolve();
@@ -309,6 +311,7 @@ function paintChrome(data) {
   els.addFiles.disabled = busy;
   els.addFolder.disabled = busy;
   els.clear.disabled = busy || totals.files === 0;
+  els.reverseList.disabled = busy || totals.files < 2;
   els.removePrinted.hidden = !data.documents.some((doc) => doc.status === "printed");
   els.removePrinted.disabled = busy;
 
@@ -347,6 +350,7 @@ function paintMessage() {
 
 function paintDocuments(data) {
   const docs = data.documents;
+  if (view.dragging) return;
   const key = docs.map((doc) => doc.id).join("|");
   if (key !== view.docKey) {
     view.docKey = key;
@@ -374,8 +378,9 @@ function emptyRow() {
 function rowHtml(doc, index, data) {
   const status = statusInfo(doc, data);
   const locked = data.job.running;
+  const grip = `<span class="drag" draggable="${locked ? "false" : "true"}" role="button" aria-disabled="${locked ? "true" : "false"}" aria-label="Drag ${escapeHtml(doc.name)} to a new place" title="Drag to change the print order"><svg viewBox="0 0 10 16" aria-hidden="true"><circle cx="2.5" cy="3" r="1.15"/><circle cx="7.5" cy="3" r="1.15"/><circle cx="2.5" cy="8" r="1.15"/><circle cx="7.5" cy="8" r="1.15"/><circle cx="2.5" cy="13" r="1.15"/><circle cx="7.5" cy="13" r="1.15"/></svg></span>`;
   return `<tr data-id="${doc.id}" class="${rowClass(doc)}">
-    <td class="num">${index + 1}</td>
+    <td class="num"><span class="num-wrap">${grip}<span class="num-value">${index + 1}</span></span></td>
     <td class="check"><input type="checkbox" class="include" ${doc.selected ? "checked" : ""} ${locked ? "disabled" : ""} aria-label="Include ${escapeHtml(doc.name)}"></td>
     <td class="file"><div class="file-cell">${fileIcon(doc.kind)}<button type="button" class="eye" aria-label="Preview ${escapeHtml(doc.name)}">${EYE}</button><span class="file-name" title="${escapeHtml(doc.path)}">${escapeHtml(doc.name)}</span></div></td>
     <td>${escapeHtml(doc.typeLabel)}</td>
@@ -397,7 +402,12 @@ function syncRow(doc, index, data) {
   const include = row.querySelector(".include");
   if (document.activeElement !== include) include.checked = doc.selected;
   include.disabled = locked;
-  row.querySelector(".num").textContent = String(index + 1);
+  row.querySelector(".num-value").textContent = String(index + 1);
+  const drag = row.querySelector(".drag");
+  if (drag) {
+    drag.draggable = !locked;
+    drag.setAttribute("aria-disabled", locked ? "true" : "false");
+  }
   row.querySelector(".pages").textContent = pagesText(doc);
   const status = statusInfo(doc, data);
   const statusCell = row.querySelector(".status");
@@ -722,6 +732,75 @@ els.clear.addEventListener("click", () => {
   api("/api/documents/clear").catch(() => {});
 });
 els.removePrinted.addEventListener("click", () => api("/api/documents/remove-printed").catch(() => {}));
+els.reverseList.addEventListener("click", () => {
+  if (!view.last || view.last.documents.length < 2 || view.last.job.running) return;
+  api("/api/documents/reverse").catch(() => {});
+});
+
+let dragId = null;
+
+function listIds() {
+  return [...els.rows.querySelectorAll("tr[data-id]")].map((row) => row.dataset.id);
+}
+
+function clearDragMarks() {
+  els.rows.querySelectorAll("tr").forEach((row) => {
+    row.classList.remove("dragging", "drop-before", "drop-after");
+  });
+}
+
+function finishDrag() {
+  view.dragging = false;
+  dragId = null;
+  clearDragMarks();
+}
+
+els.rows.addEventListener("dragstart", (event) => {
+  const handle = event.target.closest(".drag");
+  if (!handle || handle.getAttribute("aria-disabled") === "true") {
+    event.preventDefault();
+    return;
+  }
+  const row = handle.closest("tr");
+  dragId = row.dataset.id;
+  view.dragging = true;
+  row.classList.add("dragging");
+  event.dataTransfer.effectAllowed = "move";
+  event.dataTransfer.setData("text/plain", dragId);
+});
+
+els.rows.addEventListener("dragover", (event) => {
+  if (!view.dragging) return;
+  const row = event.target.closest("tr[data-id]");
+  if (!row || row.dataset.id === dragId) return;
+  event.preventDefault();
+  event.dataTransfer.dropEffect = "move";
+  const after = event.clientY > row.getBoundingClientRect().top + row.getBoundingClientRect().height / 2;
+  clearDragMarks();
+  els.rows.querySelector(`tr[data-id="${cssEscape(dragId)}"]`)?.classList.add("dragging");
+  row.classList.add(after ? "drop-after" : "drop-before");
+});
+
+els.rows.addEventListener("drop", (event) => {
+  if (!view.dragging || !dragId) return;
+  event.preventDefault();
+  const row = event.target.closest("tr[data-id]");
+  const moving = els.rows.querySelector(`tr[data-id="${cssEscape(dragId)}"]`);
+  if (row && moving && row !== moving) {
+    const after = event.clientY > row.getBoundingClientRect().top + row.getBoundingClientRect().height / 2;
+    els.rows.insertBefore(moving, after ? row.nextSibling : row);
+  }
+  const ids = listIds();
+  finishDrag();
+  ids.forEach((id, index) => {
+    const cell = els.rows.querySelector(`tr[data-id="${cssEscape(id)}"] .num-value`);
+    if (cell) cell.textContent = String(index + 1);
+  });
+  view.docKey = ids.join("|");
+  api("/api/documents/reorder", { ids }).catch(() => {});
+});
+
+els.rows.addEventListener("dragend", finishDrag);
 els.openSettings.addEventListener("click", () => {
   showSettingsTab("print");
   els.settings.hidden = false;

@@ -116,6 +116,15 @@ def handle_post(app: App, handler: BaseHTTPRequestHandler) -> None:
     elif route == "/api/documents/select-all":
         app.select_all(bool(payload.get("selected")))
         send_json(handler, 200, {"ok": True})
+    elif route == "/api/documents/reverse":
+        app.reverse_documents()
+        send_json(handler, 200, {"ok": True})
+    elif route == "/api/documents/reorder":
+        ids = payload.get("ids") or []
+        if not isinstance(ids, list):
+            raise ValueError("Ids must be a list")
+        app.reorder_documents([str(doc_id) for doc_id in ids])
+        send_json(handler, 200, {"ok": True})
     elif route == "/api/settings":
         app.update_settings(payload)
         send_json(handler, 200, {"ok": True})

@@ -548,6 +548,35 @@ class App:
             self.documents = [doc for doc in self.documents if doc.id not in wanted]
             self._write_state()
 
+    def reverse_documents(self) -> None:
+        """Turn the list upside down. Printing follows this order."""
+        self._require_idle()
+        with self.lock:
+            self.documents.reverse()
+            self._write_state()
+
+    def reorder_documents(self, ids: list[str]) -> None:
+        """Put the files in the given order. Unknown ids stay at the end."""
+        self._require_idle()
+        if not isinstance(ids, list):
+            raise ValueError("Ids must be a list")
+        with self.lock:
+            by_id = {doc.id: doc for doc in self.documents}
+            ordered: list[Document] = []
+            seen: set[str] = set()
+            for raw in ids:
+                doc_id = str(raw)
+                doc = by_id.get(doc_id)
+                if doc is None or doc_id in seen:
+                    continue
+                ordered.append(doc)
+                seen.add(doc_id)
+            for doc in self.documents:
+                if doc.id not in seen:
+                    ordered.append(doc)
+            self.documents = ordered
+            self._write_state()
+
     def remove_printed(self) -> int:
         self._require_idle()
         with self.lock:

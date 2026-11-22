@@ -366,7 +366,7 @@ svg { width: 22px; height: 22px; display: block; }
 .table-scroll:has(tr.empty) tr { height: 100%; }
 .table-scroll:has(tr.empty) colgroup { display: none; }
 table { width: 100%; min-width: 920px; border-collapse: collapse; table-layout: fixed; font-size: 13px; }
-.c-num { width: 42px; }
+.c-num { width: 58px; }
 .c-check { width: 36px; }
 .c-type { width: 68px; }
 .c-pages { width: 64px; }
@@ -400,6 +400,23 @@ td {
   text-overflow: ellipsis;
 }
 td.num, th.num { text-align: right; color: var(--faint); }
+.num-wrap { display: inline-flex; align-items: center; justify-content: flex-end; gap: 4px; width: 100%; }
+.drag {
+  width: 14px;
+  height: 22px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: #9aa8b5;
+  cursor: grab;
+  display: grid;
+  place-items: center;
+}
+.drag svg { width: 10px; height: 14px; fill: currentColor; }
+.drag[aria-disabled="true"] { cursor: default; color: #d5dde4; }
+tr.dragging { opacity: 0.45; }
+tr.drop-before td { box-shadow: inset 0 2px 0 var(--blue); }
+tr.drop-after td { box-shadow: inset 0 -2px 0 var(--blue); }
 td.check, th.check, td.pages, td.size, td.status { text-align: center; }
 tbody tr:hover { background: #f4f8fc; }
 tbody tr.printing { background: var(--row); }
