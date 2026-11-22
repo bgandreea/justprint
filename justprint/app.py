@@ -19,6 +19,7 @@ from pathlib import Path
 
 from PIL import Image
 
+from justprint import __version__
 from justprint.pages import (
     SheetProgress,
     filter_pages,
@@ -1230,6 +1231,7 @@ class App:
                 self._set_job(message=self._queue_status(settings))
                 if settings.get("wait_for_empty_queue", True):
                     self._mark(item.id, "printing", None)
+                    source.release_native()
                     if not self._await_job(sink, settings, item.name, expected_pages=1):
                         raise StopPrint()
                 else:
@@ -1281,6 +1283,7 @@ class App:
                 self._set_job(message=self._queue_status(settings))
                 if settings.get("wait_for_empty_queue", True):
                     self._mark(item.id, "printing", None)
+                    source.release_native()
                     if not self._await_job(sink, settings, item.name, expected_pages=len(group)):
                         raise StopPrint()
                 else:
@@ -1712,7 +1715,7 @@ class App:
         return {
             "format": "justprint-settings",
             "schemaVersion": 1,
-            "app": "1.0.0",
+            "app": __version__,
             "printer": settings.get("printer", ""),
             "preset": preset,
         }

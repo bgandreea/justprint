@@ -1,0 +1,140 @@
+name: Windows release
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.15"
+
+      - name: Install
+        shell: bash
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -r requirements.txt "pyinstaller==6.22.3"
+
+      - name: Package JustPrint
+        shell: bash
+        run: |
+          set -euo pipefail
+          version="$(python -c 'import justprint; print(justprint.__version__)')"
+          if [[ "${GITHUB_REF_NAME}" == v* && "${GITHUB_REF_NAME}" != "v${version}" ]]; then
+            echo "Tag ${GITHUB_REF_NAME} does not match app version ${version}" >&2
+            exit 1
+          fi
+          python - <<'PY'
+          from pathlib import Path
+          text = Path("justprint/__init__.py").read_text(encoding="utf-8")
+          version = "0.0.0"
+          for line in text.splitlines():
+              if line.startswith("__version__"):
+                  version = line.split("=", 1)[1].strip().strip('"').strip("'")
+          parts = [int(piece) for piece in version.split(".")]
+          while len(parts) < 4:
+              parts.append(0)
+          filevers = ", ".join(str(part) for part in parts[:4])
+          Path("version_info.txt").write_text(
+              "\n".join([
+                  "VSVersionInfo(",
+                  "  ffi=FixedFileInfo(",
+                  f"    filevers=({filevers}),",
+                  f"    prodvers=({filevers}),",
+                  "    mask=0x3f,",
+                  "    flags=0x0,",
+                  "    OS=0x40004,",
+                  "    fileType=0x1,",
+                  "    subtype=0x0,",
+                  "    date=(0, 0)",
+                  "  ),",
+                  "  kids=[",
+                  "    StringFileInfo([StringTable('040904B0', [",
+                  "      StringStruct('CompanyName', 'JustPrint'),",
+                  "      StringStruct('FileDescription', 'JustPrint'),",
+                  f"      StringStruct('FileVersion', '{version}'),",
+                  "      StringStruct('InternalName', 'JustPrint'),",
+                  "      StringStruct('OriginalFilename', 'JustPrint.exe'),",
+                  "      StringStruct('ProductName', 'JustPrint'),",
+                  f"      StringStruct('ProductVersion', '{version}')",
+                  "    ])]),",
+                  "    VarFileInfo([VarStruct('Translation', [1033, 1200])])",
+                  "  ]",
+                  ")",
+                  "",
+              ]),
+              encoding="utf-8",
+          )
+          PY
+          python -m PyInstaller --noconfirm --clean --windowed --name JustPrint \
+            --icon justprint.ico \
+            --version-file version_info.txt \
+            --add-data "ui;ui" \
+            --add-data "justprint.ico;." \
+            --hidden-import webview \
+            --hidden-import tkinter \
+            --hidden-import tkinter.filedialog \
+            --hidden-import win32print \
+            --hidden-import win32ui \
+            --hidden-import win32gui \
+            --hidden-import win32con \
+            --hidden-import win32api \
+            --collect-all webview \
+            --collect-all pythonnet \
+            --collect-all pypdfium2 \
+            --collect-all PIL \
+            main.py
+          test -f dist/JustPrint/JustPrint.exe
+          test -f dist/JustPrint/_internal/ui/index.html
+          test -f dist/JustPrint/_internal/ui/app.js
+          test -f dist/JustPrint/_internal/justprint.ico
+          test -f dist/JustPrint/_internal/python315.dll
+          test -f dist/JustPrint/_internal/pypdfium2_raw/pdfium.dll
+          python - <<PY
+          import zipfile
+          from pathlib import Path
+          version = "${version}"
+          root = Path("dist/JustPrint")
+          destination = Path(f"JustPrint-{version}-windows.zip")
+          with zipfile.ZipFile(destination, "w", compression=zipfile.ZIP_DEFLATED) as archive:
+              for path in sorted(root.rglob("*")):
+                  if path.is_file():
+                      archive.write(path, Path("JustPrint") / path.relative_to(root))
+          print(f"Wrote {destination} ({destination.stat().st_size} bytes)")
+          PY
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: JustPrint-${{ github.ref_name }}-windows
+          path: JustPrint-*-windows.zip
+          if-no-files-found: error
+
+      - name: Publish GitHub release
+        if: startsWith(github.ref, 'refs/tags/v')
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          version="$(python -c 'import justprint; print(justprint.__version__)')"
+          notes="$(mktemp)"
+          cat > "${notes}" <<EOF
+          JustPrint ${version} for Windows.
+
+          Fixes a crash when printing several PDFs in one run. Reading the folder, showing the preview, and sending the job no longer open PDFs at the same time.
+
+          Unzip the folder and run JustPrint.exe. Keep the whole folder together.
+          EOF
+          gh release create "v${version}" "JustPrint-${version}-windows.zip" \
+            --title "JustPrint ${version}" \
+            --notes-file "${notes}"
